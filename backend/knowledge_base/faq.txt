@@ -1,0 +1,8 @@
+Q: What is this application about?
+A: This application is designed to help users find job opportunities and improve their resumes.
+
+Q: How do I search for jobs?
+A: You can search for jobs by entering keywords related to the job title, company, or skills in the search bar.
+
+Q: How do I upload my resume?
+A: You can upload your resume in the profile section of the application.  Supported formats are PDF and DOCX.
