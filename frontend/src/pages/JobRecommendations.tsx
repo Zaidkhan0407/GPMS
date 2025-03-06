@@ -18,8 +18,9 @@ import React, { useState, useEffect } from 'react';
 
     const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selectedModules }) => {
       const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
-      const [, setLoading] = useState(false);
+      const [loading, setLoading] = useState(false);
       const [error, setError] = useState<string | null>(null);
+      const [applying, setApplying] = useState<string | null>(null);
 
       useEffect(() => {
         if (resume && selectedModules.includes("Job Recommendations")) {
@@ -58,6 +59,42 @@ import React, { useState, useEffect } from 'react';
         }
       };
 
+      const handleApply = async (jobId: string) => {
+        if (!resume) {
+          setError('Please upload a resume to apply');
+          return;
+        }
+
+        setApplying(jobId);
+        setError(null);
+
+        const formData = new FormData();
+        formData.append('resume', resume);
+
+        try {
+          const token = getAuthToken();
+          await axios.post(`http://localhost:5000/api/jobs/${jobId}/apply`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          // Update the UI to show application was successful
+          const updatedJobs = recommendedJobs.map(job => {
+            if (job.id === jobId) {
+              return { ...job, applied: true };
+            }
+            return job;
+          });
+          setRecommendedJobs(updatedJobs);
+        } catch (error) {
+          console.error('Error applying to job:', error);
+          setError('An error occurred while applying to the job. Please try again.');
+        } finally {
+          setApplying(null);
+        }
+      };
+
       return (
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-6">Job Recommendations</h1>
@@ -66,6 +103,12 @@ import React, { useState, useEffect } from 'react';
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
           )}
 
@@ -79,7 +122,14 @@ import React, { useState, useEffect } from 'react';
                   <h4 className="font-medium mb-1">Description:</h4>
                   <p className="text-gray-700 mb-2">{job.description}</p>
                   <h4 className="font-medium mb-1">Requirements:</h4>
-                  <p className="text-gray-700">{job.requirements}</p>
+                  <p className="text-gray-700 mb-4">{job.requirements}</p>
+                  <button
+                    onClick={() => handleApply(job.id)}
+                    disabled={applying === job.id}
+                    className={`px-4 py-2 rounded-md text-white font-medium ${applying === job.id ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                  >
+                    {applying === job.id ? 'Applying...' : 'Apply Now'}
+                  </button>
                 </div>
               ))}
             </div>

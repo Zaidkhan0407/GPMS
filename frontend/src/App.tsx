@@ -9,6 +9,7 @@ import React, { useState } from 'react';
     import InterviewPrep from './pages/InterviewPrep';
     import JobRecommendations from './pages/JobRecommendations';
     import TPODashboard from './pages/TPODashboard';
+    import HRDashboard from './pages/HRDashboard';
     import { AuthProvider, useAuth } from './context/AuthContext';
 
     const PrivateRoute = ({ children, role }: { children: React.ReactNode; role: string }) => {
@@ -70,6 +71,14 @@ import React, { useState } from 'react';
                     element={
                       <PrivateRoute role="student">
                         <JobRecommendations resume={resume} selectedModules={selectedModules} />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/hr-dashboard"
+                    element={
+                      <PrivateRoute role="hr">
+                        <HRDashboard />
                       </PrivateRoute>
                     }
                   />

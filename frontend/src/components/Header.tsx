@@ -42,6 +42,11 @@ import React, { useState } from 'react';
                       TPO Dashboard
                     </Link>
                   )}
+                  {user && user.role === 'hr' && (
+                    <Link to="/hr-dashboard" className="text-base font-medium text-white hover:text-indigo-50">
+                      HR Dashboard
+                    </Link>
+                  )}
                 </div>
               </div>
               <div className="ml-10 space-x-4 flex items-center">
