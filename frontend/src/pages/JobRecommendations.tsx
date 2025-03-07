@@ -89,7 +89,7 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
       setRecommendedJobs(updatedJobs);
     } catch (error) {
       console.error('Error applying to job:', error);
-      setError('An error occurred while applying to the job. Please try again.');
+      setError('An error occurred while applying to the job.Please try again.');
     } finally {
       setApplying(null);
     }
