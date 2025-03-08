@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from bson import ObjectId
 import os
+import tempfile
 from PyPDF2 import PdfReader
 from huggingface_hub import InferenceClient
 import re
@@ -157,18 +158,45 @@ def recommend_jobs(resume_text):
 from docx import Document
 
 def extract_text_from_file(file, file_type):
-    """Extracts text from PDF or DOCX files."""
-    text = ""
+    """Extracts text from PDF or DOCX files with improved error handling and text processing."""
+    temp_file = None
+    try:
+        text = ""
+        # Save the file to a temporary location to avoid filename issues
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_type}')
+        file.save(temp_file.name)
+        file.seek(0)  # Reset file pointer for potential reuse
+        temp_file.close()  # Close the temp file handle
 
-    if file_type == "pdf":
-        reader = PdfReader(file)
-        for page in reader.pages:
-            text += page.extract_text() or ""  # Handle None values
-    elif file_type == "docx":
-        doc = Document(file) 
-        text = "\n".join([para.text for para in doc.paragraphs])
+        if file_type == "pdf":
+            with open(temp_file.name, 'rb') as pdf_file:
+                reader = PdfReader(pdf_file)
+                for page in reader.pages:
+                    extracted = page.extract_text()
+                    if extracted:
+                        text += extracted + "\n"
+        elif file_type == "docx":
+            doc = Document(temp_file.name)
+            text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
+            doc.close()  # Close the document
 
-    return text.strip() 
+        # Process and normalize the extracted text
+        text = text.strip()
+        text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+        text = re.sub(r'[^\w\s.,;:!?-]', '', text)  # Remove special characters except basic punctuation
+        
+        return text
+    except Exception as e:
+        logger.error(f"Error extracting text from file: {str(e)}")
+        raise e
+    finally:
+        # Clean up temporary file in finally block
+        if temp_file and os.path.exists(temp_file.name):
+            try:
+                os.unlink(temp_file.name)
+            except Exception as e:
+                logger.error(f"Error cleaning up temporary file: {str(e)}")
+                # Continue execution even if cleanup fails 
 
 # Function to generate interview questions based on resume content
 def generate_interview_questions(resume_text):
@@ -412,7 +440,13 @@ Provide your feedback in a clear, concise manner with specific points for improv
 
 def allowed_file(filename):
     """Check if the file has an allowed extension (PDF or DOCX)."""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'docx'}
+    try:
+        if not filename or '.' not in filename:
+            return False
+        extension = filename.rsplit('.', 1)[1].lower()
+        return extension in {'pdf', 'docx'}
+    except Exception:
+        return False
 
 # Add after existing imports
 from datetime import datetime

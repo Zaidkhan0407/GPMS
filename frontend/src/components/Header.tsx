@@ -18,63 +18,78 @@ import React, { useState } from 'react';
       return (
         <header className="bg-indigo-600">
           <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Top">
-            <div className="w-full py-6 flex items-center justify-between border-b border-indigo-500 lg:border-none">
-              <div className="flex items-center">
-                <Link to="/" className="text-white text-2xl font-bold">
+            <div className="w-full py-4 flex items-center justify-between border-b border-indigo-500 lg:border-none">
+              {/* Logo and Navigation Links */}
+              <div className="flex items-center space-x-8">
+                <Link to="/" className="text-white text-xl font-bold whitespace-nowrap">
                   AI Placement Management
                 </Link>
-                <div className="hidden ml-10 space-x-8 lg:block">
+                <div className="hidden lg:flex space-x-6">
                   {user && user.role === 'student' && (
                     <>
-                      <Link to="/resume-analysis" className="text-base font-medium text-white hover:text-indigo-40">
+                      <Link to="/resume-analysis" className="text-sm font-medium text-white hover:text-indigo-200 whitespace-nowrap">
                         Resume Analysis
                       </Link>
-                      <Link to="/interview-prep" className="text-base font-medium text-white hover:text-indigo-40">
+                      <Link to="/interview-prep" className="text-sm font-medium text-white hover:text-indigo-200 whitespace-nowrap">
                         Interview Prep
                       </Link>
-                      <Link to="/job-recommendations" className="text-base font-medium text-white hover:text-indigo-40">
+                      <Link to="/job-recommendations" className="text-sm font-medium text-white hover:text-indigo-200 whitespace-nowrap">
                         Job Recommendations
                       </Link>
                     </>
                   )}
                   {user && user.role === 'tpo' && (
-                    <Link to="/tpo-dashboard" className="text-base font-medium text-white hover:text-indigo-50">
+                    <Link to="/tpo-dashboard" className="text-sm font-medium text-white hover:text-indigo-200 whitespace-nowrap">
                       TPO Dashboard
                     </Link>
                   )}
                   {user && user.role === 'hr' && (
-                    <Link to="/hr-dashboard" className="text-base font-medium text-white hover:text-indigo-50">
+                    <Link to="/hr-dashboard" className="text-sm font-medium text-white hover:text-indigo-200 whitespace-nowrap">
                       HR Dashboard
                     </Link>
                   )}
                 </div>
               </div>
-              <div className="ml-10 space-x-4 flex items-center">
+
+              {/* Right Side Actions */}
+              <div className="flex items-center space-x-4">
                 {user ? (
                   <>
-                    {/* Resume Upload and Module Selection */}
-                    <div className="flex items-center space-x-4">
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => handleResumeUpload(e.target.files ? e.target.files[0] : null)}
-                        className="text-sm text-white file:mr-4 file:py-2 file:px-4 rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-700 file:text-white hover:file:bg-indigo-800"
-                      />
+                    <div className="hidden sm:flex items-center space-x-4">
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) => handleResumeUpload(e.target.files ? e.target.files[0] : null)}
+                          className="hidden"
+                          id="resume-upload"
+                        />
+                        <label
+                          htmlFor="resume-upload"
+                          className="cursor-pointer bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold py-2 px-4 rounded inline-flex items-center"
+                        >
+                          {resume ? 'Change File' : 'Choose File'}
+                        </label>
+                      </div>
                       <button
                         onClick={() => setIsModuleSelectionOpen(!isModuleSelectionOpen)}
-                        className="bg-indigo-700 hover:bg-indigo-800 text-white font-semibold py-2 px-4 rounded"
+                        className="bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold py-2 px-4 rounded whitespace-nowrap"
                       >
                         Select Modules
                       </button>
                     </div>
-                    <span className="text-white text-sm">{user.email}</span>
-                    <button
-                      onClick={logout}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-700 hover:bg-indigo-800"
-                    >
-                      <LogOut className="mr-2 h-5 w-5" />
-                      Logout
-                    </button>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-white text-sm hidden md:block truncate max-w-[150px]">
+                        {user.email}
+                      </span>
+                      <button
+                        onClick={logout}
+                        className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-indigo-700 hover:bg-indigo-800"
+                      >
+                        <LogOut className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:block">Logout</span>
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>

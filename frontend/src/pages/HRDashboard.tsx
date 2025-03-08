@@ -24,11 +24,10 @@ interface Application {
 
 const HRDashboard: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
-  const [selectedApplication, setSelectedApplication] = useState<string | null>(null);
-  const [newStatus, setNewStatus] = useState<string>('pending');
   const [error, setError] = useState<string | null>(null);
   const [companies, setCompanies] = useState<any[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [selectedResume, setSelectedResume] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompanies();
@@ -103,10 +102,11 @@ const HRDashboard: React.FC = () => {
         return 'text-yellow-500';
     }
   };
+
   const handleRemoveRejected = async () => {
     try {
       const token = getAuthToken();
-      const response = await axios.delete('http://localhost:5000/api/applications/rejected', {
+      await axios.delete('http://localhost:5000/api/applications/rejected', {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (selectedCompany) {
@@ -117,168 +117,202 @@ const HRDashboard: React.FC = () => {
       setError('Failed to remove rejected applications. Please try again.');
     }
   };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">HR Dashboard</h1>
+  <div className="min-h-screen bg-gray-50 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 className="text-4xl font-bold text-gray-900 mb-8">HR Dashboard</h1>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6" role="alert">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="mb-4">
-        <label htmlFor="company" className="block text-sm font-medium text-gray-700">Select Company</label>
-        <select
-          id="company"
-          value={selectedCompany || ''}
-          onChange={(e) => setSelectedCompany(e.target.value)}
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-        >
-          {companies.map((company) => (
-            <option key={company._id} value={company._id}>
-              {company.name} - {company.position}
-            </option>
-          ))}
-        </select>
+      <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="px-6 py-4">
+          <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">Select Company</label>
+          <select
+            id="company"
+            value={selectedCompany || ''}
+            onChange={(e) => setSelectedCompany(e.target.value)}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          >
+            {companies.map((company) => (
+              <option key={company._id} value={company._id}>
+                {company.name} - {company.position}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {selectedCompany && (
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Applications</h2>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-900">Applications</h2>
             <button
               onClick={handleRemoveRejected}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
             >
               Remove Rejected
             </button>
           </div>
           {applications.length === 0 ? (
-            <p>No applications found for this position.</p>
+            <div className="px-6 py-4 text-gray-500">No applications found for this position.</div>
           ) : (
-            <div className="space-y-8">
+            <div className="divide-y divide-gray-200">
               {/* Technical Candidates Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Technical Candidates</h3>
+              <div className="px-6 py-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Technical Candidates</h3>
                 <div className="space-y-4">
                   {applications
                     .filter(app => (app.user as any).education_type === 'technical')
                     .sort((a, b) => b.scores.overall_match - a.scores.overall_match)
                     .map((application) => (
-                      <div key={application.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
+                      <div key={application.id} className="bg-white rounded-lg shadow-sm p-6 transition-all duration-150 hover:shadow-md border border-gray-100">
+                        <div className="flex justify-between items-start mb-4">
                           <div>
-                            <h3 className="text-lg font-medium">{application.user.email}</h3>
-                            <p className="text-sm text-gray-500">Applied: {new Date(application.applied_at).toLocaleDateString()}</p>
+                            <h4 className="text-xl font-semibold text-gray-900">{application.user.email}</h4>
+                            <p className="text-sm text-gray-500 mt-1">Applied: {new Date(application.applied_at).toLocaleDateString()}</p>
                           </div>
-                          <span className={`font-medium ${getStatusColor(application.status)}`}>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(application.status)} bg-opacity-10`}>
                             {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                           </span>
                         </div>
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium mb-1">Match Score:</h4>
-                          <div className="text-sm">
-                            <p className="font-medium">{(application.scores.overall_match * 1).toFixed(1)}%</p>
-                            <div className="mt-2">
-                              <p className="text-gray-600">Technical Match: {(application.scores.technical_match * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">Soft Skills Match: {(application.scores.soft_skills_match * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">Experience Match: {(application.scores.experience_match * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">Cosine Similarity: {(application.scores.cosine_similarity * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">BM25 Score: {(application.scores.bm25_score * 1).toFixed(1)}%</p>
+                        <div className="mb-6">
+                          <h5 className="text-sm font-medium text-gray-700 mb-3">Match Scores</h5>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                              <p className="font-semibold text-blue-700 text-lg">{(application.scores.overall_match * 100).toFixed(1)}%</p>
+                              <p className="text-blue-600 text-sm">Overall Match</p>
+                            </div>
+                            <div className="bg-green-50 p-3 rounded-lg">
+                              <p className="font-semibold text-green-700 text-lg">{(application.scores.technical_match * 100).toFixed(1)}%</p>
+                              <p className="text-green-600 text-sm">Technical Match</p>
+                            </div>
+                            <div className="bg-purple-50 p-3 rounded-lg">
+                              <p className="font-semibold text-purple-700 text-lg">{(application.scores.soft_skills_match * 100).toFixed(1)}%</p>
+                              <p className="text-purple-600 text-sm">Soft Skills Match</p>
+                            </div>
+                            <div className="bg-indigo-50 p-3 rounded-lg">
+                              <p className="font-semibold text-indigo-700 text-lg">{(application.scores.experience_match * 100).toFixed(1)}%</p>
+                              <p className="text-indigo-600 text-sm">Experience Match</p>
                             </div>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                          <div className="space-x-3">
+                            <button
+                              onClick={() => handleUpdateStatus(application.id, 'accepted')}
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-150"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(application.id, 'rejected')}
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
+                            >
+                              Reject
+                            </button>
+                          </div>
                           {application.resume_url && (
                             <button
                               onClick={() => handleViewResume(application.resume_url!)}
-                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
                             >
                               View Resume
                             </button>
                           )}
-                          <button
-                            onClick={() => handleUpdateStatus(application.id, 'accepted')}
-                            className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(application.id, 'rejected')}
-                            className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          >
-                            Reject
-                          </button>
                         </div>
                       </div>
                     ))}
-                  </div>
-              </div>
-              {/* Non-Technical Candidates Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Non-Technical Candidates</h3>
-                <div className="space-y-4">
-                  {applications
-                    .filter(app => (app.user as any).education_type === 'non-technical')
-                    .sort((a, b) => b.scores.overall_match - a.scores.overall_match)
-                    .map((application) => (
-                      <div key={application.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="text-lg font-medium">{application.user.email}</h3>
-                            <p className="text-sm text-gray-500">Applied: {new Date(application.applied_at).toLocaleDateString()}</p>
-                          </div>
-                          <span className={`font-medium ${getStatusColor(application.status)}`}>
-                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                          </span>
-                        </div>
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium mb-1">Match Score:</h4>
-                          <div className="text-sm">
-                            <p className="font-medium">{(application.scores.overall_match * 1).toFixed(1)}%</p>
-                            <div className="mt-2">
-                              <p className="text-gray-600">Technical Match: {(application.scores.technical_match * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">Soft Skills Match: {(application.scores.soft_skills_match * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">Experience Match: {(application.scores.experience_match * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">Cosine Similarity: {(application.scores.cosine_similarity * 1).toFixed(1)}%</p>
-                              <p className="text-gray-600">BM25 Score: {(application.scores.bm25_score * 1).toFixed(1)}%</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          {application.resume_url && (
-                            <button
-                              onClick={() => handleViewResume(application.resume_url!)}
-                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              View Resume
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleUpdateStatus(application.id, 'accepted')}
-                            className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(application.id, 'rejected')}
-                            className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
-            )}
+              
+              {/* Non-Technical Candidates Section */}
+              <div className="px-6 py-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Non-Technical Candidates</h3>
+                <div className="space-y-4">
+                  {applications
+                    .filter(app => (app.user as any).education_type !== 'technical')
+                    .sort((a, b) => b.scores.overall_match - a.scores.overall_match)
+                    .map((application) => (
+                      <div key={application.id} className="bg-white rounded-lg shadow-sm p-6 transition-all duration-150 hover:shadow-md border border-gray-100">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h4 className="text-xl font-semibold text-gray-900">{application.user.email}</h4>
+                            <p className="text-sm text-gray-500 mt-1">Applied: {new Date(application.applied_at).toLocaleDateString()}</p>
+                          </div>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(application.status)} bg-opacity-10`}>
+                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="mb-6">
+                          <h5 className="text-sm font-medium text-gray-700 mb-3">Match Scores</h5>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                              <p className="font-semibold text-blue-700 text-lg">{(application.scores.overall_match * 100).toFixed(1)}%</p>
+                              <p className="text-blue-600 text-sm">Overall Match</p>
+                            </div>
+                            <div className="bg-green-50 p-3 rounded-lg">
+                              <p className="font-semibold text-green-700 text-lg">{(application.scores.technical_match * 100).toFixed(1)}%</p>
+                              <p className="text-green-600 text-sm">Technical Match</p>
+                            </div>
+                            <div className="bg-purple-50 p-3 rounded-lg">
+                              <p className="font-semibold text-purple-700 text-lg">{(application.scores.soft_skills_match * 100).toFixed(1)}%</p>
+                              <p className="text-purple-600 text-sm">Soft Skills Match</p>
+                            </div>
+                            <div className="bg-indigo-50 p-3 rounded-lg">
+                              <p className="font-semibold text-indigo-700 text-lg">{(application.scores.experience_match * 100).toFixed(1)}%</p>
+                              <p className="text-indigo-600 text-sm">Experience Match</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                          <div className="space-x-3">
+                            <button
+                              onClick={() => handleUpdateStatus(application.id, 'accepted')}
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-150"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(application.id, 'rejected')}
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                          {application.resume_url && (
+                            <button
+                              onClick={() => handleViewResume(application.resume_url!)}
+                              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
+                            >
+                              View Resume
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
-  );
+  </div>
+);
 };
 
 export default HRDashboard;

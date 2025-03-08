@@ -133,33 +133,36 @@ const TPODashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">TPO Dashboard</h1>
+  <div className="min-h-screen bg-gray-50 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 className="text-4xl font-bold text-gray-900 mb-8">TPO Dashboard</h1>
       
-      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <h2 className="text-2xl font-bold mb-4">{editingCompany ? 'Edit Job Listing' : 'Add New Company'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Company Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="position" className="block text-sm font-medium text-gray-700">Position</label>
-            <input
-              type="text"
-              id="position"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">{editingCompany ? 'Edit Job Listing' : 'Add New Company'}</h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Company Name</label>
+              <input
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-150"
+              />
+            </div>
+            <div>
+              <label htmlFor="position" className="block text-sm font-medium text-gray-700">Position</label>
+              <input
+                type="text"
+                id="position"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-150"
+              />
+            </div>
           </div>
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">Job Description</label>
@@ -168,7 +171,8 @@ const TPODashboard: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              rows={4}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-150"
             ></textarea>
           </div>
           <div>
@@ -178,85 +182,96 @@ const TPODashboard: React.FC = () => {
               value={requirements}
               onChange={(e) => setRequirements(e.target.value)}
               required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              rows={4}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-150"
             ></textarea>
           </div>
-          <div>
-            <label htmlFor="hrEmail" className="block text-sm font-medium text-gray-700">HR Email</label>
-            <input
-              type="email"
-              id="hrEmail"
-              value={hrEmail}
-              onChange={(e) => setHrEmail(e.target.value)}
-              required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+              <label htmlFor="hrEmail" className="block text-sm font-medium text-gray-700">HR Email</label>
+              <input
+                type="email"
+                id="hrEmail"
+                value={hrEmail}
+                onChange={(e) => setHrEmail(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-150"
+              />
+            </div>
+            <div>
+              <label htmlFor="hrCode" className="block text-sm font-medium text-gray-700">HR Code</label>
+              <input
+                type="text"
+                id="hrCode"
+                value={hrCode}
+                onChange={(e) => setHrCode(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm transition-colors duration-150"
+                placeholder="Enter a unique code for HR authentication"
+              />
+            </div>
           </div>
-          <div>
-            <label htmlFor="hrCode" className="block text-sm font-medium text-gray-700">HR Code</label>
-            <input
-              type="text"
-              id="hrCode"
-              value={hrCode}
-              onChange={(e) => setHrCode(e.target.value)}
-              required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Enter a unique code for HR authentication"
-            />
-          </div>
-          <div className="flex space-x-4">
-            <button
-              type="submit"
-              className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {editingCompany ? 'Update Job' : 'Add Company'}
-            </button>
+          <div className="flex justify-end space-x-4">
             {editingCompany && (
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
               >
                 Cancel
               </button>
             )}
+            <button
+              type="submit"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
+            >
+              {editingCompany ? 'Update Job' : 'Add Company'}
+            </button>
           </div>
         </form>
       </div>
 
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Added Companies</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Current Job Listings</h2>
+        </div>
+        <div className="divide-y divide-gray-200">
           {companies.map((company) => (
-            <div key={company._id} className="bg-white shadow-md rounded-lg p-6">
-              <h3 className="text-lg font-semibold">{company.name}</h3>
-              <p className="text-sm text-gray-600">{company.position}</p>
-              <p className="mt-2 text-sm text-gray-800">{company.description}</p>
-              <p className="mt-2 text-sm font-medium">Requirements:</p>
-              <p className="text-sm text-gray-800">{company.requirements}</p>
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-sm text-gray-600">HR Email: {company.hr_email}</p>
-                <p className="text-sm text-gray-600">HR Code: {company.hr_code}</p>
-                <div className="mt-2 flex space-x-2">
+            <div key={company._id} className="p-6 hover:bg-gray-50 transition-colors duration-150">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">{company.name}</h3>
+                  <p className="text-sm text-gray-500 mt-1">{company.position}</p>
+                </div>
+                <div className="flex space-x-3">
                   <button
                     onClick={() => handleEdit(company)}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(company._id)}
-                    className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
                   >
-                    Delete Job
+                    Delete
                   </button>
                 </div>
+              </div>
+              <div className="mt-4 text-sm text-gray-500">
+                <p className="font-medium text-gray-700">Description:</p>
+                <p className="mt-1">{company.description}</p>
+                <p className="font-medium text-gray-700 mt-3">Requirements:</p>
+                <p className="mt-1">{company.requirements}</p>
+                <p className="font-medium text-gray-700 mt-3">HR Contact:</p>
+                <p className="mt-1">{company.hr_email}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
     </div>
+  </div>
   );
 };
 
