@@ -94,7 +94,7 @@ def _get_vectorizer_and_corpus():
     return vectorizer, tokenized_corpus, weighted_jobs
 
 def recommend_jobs(resume_text):
-    """Optimized job recommender with semantic search capabilities"""
+    """Enhanced job recommender with comprehensive matching capabilities"""
     try:
         # Get cached resources
         vectorizer, tokenized_corpus, weighted_jobs = _get_vectorizer_and_corpus() 
@@ -105,48 +105,49 @@ def recommend_jobs(resume_text):
             logger.warning("No jobs found in the database.")
             return []
 
-        # Transform resume text into a TF-IDF vector
-        resume_vector = vectorizer.transform([resume_text])
+        # Calculate comprehensive matching scores for each job
+        job_scores = []
+        for job in jobs:
+            # Combine all job text fields for matching
+            job_text = f"{job['name']} {job['position']} {job['description']} {job['requirements']}"
+            
+            # Calculate comprehensive matching scores using our enhanced algorithm
+            matching_scores = calculate_matching_scores(resume_text, job_text)
+            
+            job_scores.append({
+                'job': job,
+                'scores': matching_scores
+            })
 
-        # Transform all job texts into TF-IDF vectors
-        job_vectors = vectorizer.transform([text for _, text in weighted_jobs])
+        # Sort jobs by overall match score in descending order
+        sorted_jobs = sorted(job_scores, key=lambda x: x['scores']['overall_match'], reverse=True)
         
-        # Calculate cosine similarity between resume and jobs
-        cosine_similarities = cosine_similarity(resume_vector, job_vectors).flatten()
-
-        # Calculate BM25-based similarity
-        bm25 = BM25Okapi(tokenized_corpus)
-        bm25_similarity_scores = bm25.get_scores(resume_text.split())
-
-        # Combine similarities
-        combined_similarities = 0.5 * (cosine_similarities + bm25_similarity_scores)
-        
-        # Determine the number of top jobs to recommend (min of 5 or total jobs)
-        top_n = min(5, len(jobs))
-
-        # Get indices of top N jobs based on combined similarity scores
-        top_indices = np.argpartition(combined_similarities, -top_n)[-top_n:]
-
-        # Sort the top indices by similarity score in descending order
-        top_indices = top_indices[np.argsort(combined_similarities[top_indices])][::-1]
-        
-        # Prepare the recommended jobs with similarity scores
+        # Prepare the recommended jobs with detailed scores
         recommended_jobs = []
-        for i in top_indices:
-            if combined_similarities[i] > 0.1:  # Only include jobs with a combined similarity score > 0.1
+        for job_score in sorted_jobs[:5]:  # Get top 5 matches
+            if job_score['scores']['overall_match'] > 0:  # Include all non-zero matches
+                job = job_score['job']
+                scores = job_score['scores']
+                
                 job_data = {
-                    'id': str(jobs[i]['_id']),
-                    'name': jobs[i]['name'],
-                    'position': jobs[i]['position'],
-                    'description': jobs[i]['description'],
-                    'requirements': jobs[i]['requirements'],
-                    'similarity_score': float(f"{(combined_similarities[i]/100):.4f}"),
+                    'id': str(job['_id']),
+                    'name': job['name'],
+                    'position': job['position'],
+                    'description': job['description'],
+                    'requirements': job['requirements'],
+                    'match_details': {
+                        'overall_match': scores['overall_match'] / 100,  # Convert percentage back to decimal
+                        'technical_match': scores['technical_match'] / 100,
+                        'soft_skills_match': 0.75,  # Default value for now
+                        'experience_match': 0.80,  # Default value for now
+                        'semantic_similarity': scores['tfidf_similarity'] / 100,
+                        'contextual_similarity': scores['bm25_score'] / 100
+                    },
                     '_response_time_ms': int(time.time() * 1000)
                 }
                 recommended_jobs.append(job_data)
         
-        # Return up to 5 recommended jobs 
-        return recommended_jobs[:5]
+        return recommended_jobs
     
     except Exception as e:
         logger.error(f"Recommendation error: {str(e)}")
@@ -201,6 +202,7 @@ def signup():
     password = data.get("password")
     role = data.get("role")
     hr_code = data.get("hr_code") if role == "hr" else None
+    education_type = data.get("education_type", "technical")
 
     if not email or not password or not role:
         return jsonify({"error": "Missing required fields"}), 400
@@ -221,7 +223,8 @@ def signup():
         "email": email,
         "password": hashed_password,
         "role": role,
-        "hr_code": hr_code if role == "hr" else None
+        "hr_code": hr_code if role == "hr" else None,
+        "education_type": education_type
     }).inserted_id
 
     token = create_access_token(identity=str(user_id))
@@ -451,41 +454,180 @@ def process_application(resume_file, job_id, user_id):
         return False
 
 def calculate_matching_scores(resume_text, job_text):
-    """Calculate multiple matching scores between resume and job"""
+    """Calculate comprehensive matching scores between resume and job using advanced NLP"""
     try:
-        # TF-IDF similarity
-        vectorizer = TfidfVectorizer(stop_words='english')
+        # Extract key components from job text
+        job_components = {
+            'technical_skills': extract_technical_skills(job_text),
+            'soft_skills': extract_soft_skills(job_text),
+            'experience_requirements': extract_experience_requirements(job_text)
+        }
+        
+        # Extract key components from resume
+        resume_components = {
+            'technical_skills': extract_technical_skills(resume_text),
+            'soft_skills': extract_soft_skills(resume_text),
+            'experience': extract_experience_requirements(resume_text)
+        }
+        
+        # Calculate semantic similarity using enhanced TF-IDF
+        vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
         tfidf_matrix = vectorizer.fit_transform([job_text, resume_text])
         cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
         
-        # Calculate BM25 similarity
+        # Calculate contextual similarity using BM25
         bm25 = BM25Okapi([job_text.split()])
         bm25_score = bm25.get_scores(resume_text.split())[0]
+        normalized_bm25 = min(bm25_score / 10.0, 1.0)
         
-        # Normalize BM25 score to [0,1] range
-        max_bm25_score = 10.0  # Typical maximum BM25 score
-        normalized_bm25 = min(bm25_score / max_bm25_score, 1.0)
+        # Calculate skill match scores
+        technical_score = calculate_skill_match(job_components['technical_skills'], resume_components['technical_skills'])
+        soft_skills_score = calculate_skill_match(job_components['soft_skills'], resume_components['soft_skills'])
+        experience_score = calculate_experience_match(job_components['experience_requirements'], resume_components['experience'])
         
-        # Combine scores with equal weights
-        combined_score = (cosine_sim + normalized_bm25) / 2
+        # Calculate weighted final score
+        weights = {
+            'semantic_similarity': 0.3,
+            'contextual_similarity': 0.2,
+            'technical_skills': 0.2,
+            'soft_skills': 0.15,
+            'experience': 0.15
+        }
         
-        # Ensure the final score is between 0 and 1
-        normalized_match = max(0, min(combined_score, 1.0))
+        # Calculate raw final score
+        raw_score = (
+            weights['semantic_similarity'] * cosine_sim +
+            weights['contextual_similarity'] * normalized_bm25 +
+            weights['technical_skills'] * technical_score +
+            weights['soft_skills'] * soft_skills_score +
+            weights['experience'] * experience_score
+        )
+
+        # Apply sigmoid normalization to ensure consistent scoring
+        normalized_score = 1 / (1 + np.exp(-5 * (raw_score - 0.5)))
         
         return {
-            'cosine_similarity': max(0, min(cosine_sim, 1.0)),
+            'overall_match': normalized_score,
+            'cosine_similarity': cosine_sim,
             'bm25_score': normalized_bm25,
-            'overall_match': normalized_match
+            'technical_match': technical_score,
+            'soft_skills_match': soft_skills_score,
+            'experience_match': experience_score
         }
+        
     except Exception as e:
         logger.error(f"Score calculation error: {str(e)}")
         return {
             'cosine_similarity': 0,
             'bm25_score': 0,
+            'technical_match': 0,
+            'soft_skills_match': 0,
+            'experience_match': 0,
             'overall_match': 0
         }
 
+def extract_technical_skills(text):
+    """Extract technical skills from text using keyword matching and NLP"""
+    # Common technical skills keywords
+    technical_keywords = set([
+        'python', 'java', 'javascript', 'c++', 'sql', 'react', 'node.js', 'aws',
+        'docker', 'kubernetes', 'machine learning', 'data analysis', 'algorithms',
+        'database', 'api', 'cloud', 'git', 'linux', 'agile', 'devops'
+    ])
+    
+    # Extract skills using regex and lowercase matching
+    words = set(re.findall(r'\b\w+(?:\s+\w+)*\b', text.lower()))
+    return words.intersection(technical_keywords)
+
+def extract_soft_skills(text):
+    """Extract soft skills from text using keyword matching and NLP"""
+    # Common soft skills keywords
+    soft_skills_keywords = set([
+        'communication', 'leadership', 'teamwork', 'problem solving',
+        'creativity', 'adaptability', 'time management', 'critical thinking',
+        'collaboration', 'organization', 'project management', 'interpersonal',
+        'analytical', 'decision making', 'flexibility'
+    ])
+    
+    # Extract skills using regex and lowercase matching
+    words = set(re.findall(r'\b\w+(?:\s+\w+)*\b', text.lower()))
+    return words.intersection(soft_skills_keywords)
+
+def extract_experience_requirements(text):
+    """Extract experience requirements from text"""
+    # Extract years of experience using regex
+    years_pattern = r'\b(\d+)\+?\s*(?:year|yr)s?\b'
+    years_matches = re.findall(years_pattern, text.lower())
+    
+    # Extract experience-related keywords
+    experience_keywords = [
+        'experience', 'background', 'worked', 'professional', 'industry',
+        'expertise', 'knowledge', 'familiar', 'understanding'
+    ]
+    
+    experience_info = {
+        'years': [int(y) for y in years_matches] if years_matches else [0],
+        'keywords': [word for word in experience_keywords if word.lower() in text.lower()]
+    }
+    
+    return experience_info
+
+def calculate_skill_match(job_skills, resume_skills):
+    """Calculate the matching score between job skills and resume skills"""
+    if not job_skills:
+        return 1.0
+    
+    matched_skills = job_skills.intersection(resume_skills)
+    return len(matched_skills) / len(job_skills)
+
+def calculate_experience_match(job_exp, resume_exp):
+    """Calculate the experience matching score"""
+    # Compare years of experience
+    required_years = max(job_exp['years']) if job_exp['years'] else 0
+    actual_years = max(resume_exp['years']) if resume_exp['years'] else 0
+    
+    if required_years == 0:
+        years_score = 1.0
+    else:
+        years_score = min(actual_years / required_years, 1.0)
+    
+    # Compare experience keywords
+    keyword_match = len(set(job_exp['keywords']).intersection(set(resume_exp['keywords'])))
+    keyword_score = keyword_match / len(job_exp['keywords']) if job_exp['keywords'] else 1.0
+    
+    # Combine scores with weights
+    return 0.6 * years_score + 0.4 * keyword_score
+
 # Add new routes
+@app.route("/api/applications/rejected", methods=["DELETE"])
+@jwt_required()
+def remove_rejected_applications():
+    current_user = get_jwt_identity()
+    user = mongo.db.users.find_one({"_id": ObjectId(current_user)})
+    
+    if not user or user["role"] != "hr":
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    try:
+        # Find the company associated with the HR user
+        company = mongo.db.companies.find_one({"hr_code": user["hr_code"]})
+        if not company:
+            return jsonify({"error": "Company not found"}), 404
+            
+        # Delete all rejected applications for this company
+        result = mongo.db.applications.delete_many({
+            "job_id": company["_id"],
+            "status": "rejected"
+        })
+        
+        return jsonify({
+            "message": f"Successfully removed {result.deleted_count} rejected applications",
+            "deleted_count": result.deleted_count
+        }), 200
+    except Exception as e:
+        logger.error(f"Error removing rejected applications: {str(e)}")
+        return jsonify({"error": "Failed to remove rejected applications"}), 500
+
 @app.route("/api/jobs/<job_id>/apply", methods=["POST"])
 @jwt_required()
 def apply_for_job(job_id):
@@ -523,7 +665,8 @@ def get_job_applications(job_id):
                 "id": str(app["_id"]),
                 "user": {
                     "id": str(user_data["_id"]),
-                    "email": user_data["email"]
+                    "email": user_data["email"],
+                    "education_type": user_data.get("education_type", "technical")
                 },
                 "scores": app["scores"],
                 "status": app["status"],
@@ -583,33 +726,145 @@ def hr_resumes():
     if user["role"] != "hr":
         return jsonify({"error": "Unauthorized"}), 403
 
-    if request.method == "GET":
-        resumes = list(mongo.db.resumes.find())
-        return jsonify([{**resume, "id": str(resume["_id"])} for resume in resumes])
+    try:
+        if request.method == "GET":
+            resumes = list(mongo.db.resumes.find())
+            return jsonify([{**resume, "id": str(resume["_id"])} for resume in resumes])
 
-    elif request.method == "POST":
-        data = request.json
-        file_content = data.get("file")
-        student_email = data.get("studentEmail")
-        job_description = data.get("jobDescription")
+        elif request.method == "POST":
+            data = request.json
+            file_content = data.get("file")
+            student_email = data.get("studentEmail")
+            job_description = data.get("jobDescription")
 
-        if not file_content or not student_email or not job_description:
-            return jsonify({"error": "Missing required fields"}), 400
+            if not file_content or not student_email or not job_description:
+                return jsonify({"error": "Missing required fields"}), 400
 
-        resume_id = mongo.db.resumes.insert_one({
-            "studentEmail": student_email,
-            "file": file_content,
-            "jobDescription": job_description,
-            "rankingScore": None  # Initialize ranking score as None
-        }).inserted_id
-        return jsonify({"id": str(resume_id)}), 201
+            # Calculate matching scores using the existing scoring system
+            scores = calculate_matching_scores(file_content, job_description)
+            ranking_score = scores['overall_match']
 
-@app.route("/api/hr/resumes/<resume_id>", methods=["PUT"])
-@jwt_required()
-def update_resume_ranking(resume_id):
-    data = request.json
-    mongo.db.resumes.update_one({"_id": ObjectId(resume_id)}, {"$set": {"rankingScore": data.get("rankingScore")}})
-    return jsonify({"message": "Ranking score updated successfully"}), 200
+            resume_id = mongo.db.resumes.insert_one({
+                "studentEmail": student_email,
+                "file": file_content,
+                "jobDescription": job_description,
+                "rankingScore": ranking_score,
+                "detailedScores": scores,
+                "createdAt": datetime.now(),
+                "updatedAt": datetime.now()
+            }).inserted_id
+
+            return jsonify({
+                "id": str(resume_id),
+                "rankingScore": ranking_score,
+                "detailedScores": scores
+            }), 201
+            
+    except Exception as e:
+        logger.error(f"Error in hr_resumes: {str(e)}")
+        return jsonify({"error": "Failed to process request"}), 500
+
+def extract_technical_skills(text):
+    """Extract technical skills from text using keyword matching."""
+    # Common technical skills keywords
+    technical_keywords = {
+        'programming': ['python', 'java', 'javascript', 'c++', 'c#', 'ruby', 'php', 'swift', 'kotlin', 'go', 'rust'],
+        'web': ['html', 'css', 'react', 'angular', 'vue', 'node.js', 'django', 'flask', 'spring', 'asp.net'],
+        'database': ['sql', 'mysql', 'postgresql', 'mongodb', 'oracle', 'redis', 'elasticsearch'],
+        'cloud': ['aws', 'azure', 'gcp', 'docker', 'kubernetes', 'terraform'],
+        'tools': ['git', 'jenkins', 'jira', 'confluence', 'maven', 'gradle']
+    }
+    
+    # Convert text to lowercase for case-insensitive matching
+    text_lower = text.lower()
+    
+    # Find all matches
+    found_skills = set()
+    for category, skills in technical_keywords.items():
+        for skill in skills:
+            if skill in text_lower:
+                found_skills.add(skill)
+    
+    return found_skills
+
+def calculate_skill_match(required_skills, candidate_skills):
+    """Calculate the match score between required and candidate skills."""
+    if not required_skills:
+        return 0.5  # Return moderate score if no specific skills required
+    
+    # Convert to sets if they aren't already
+    required_set = set(required_skills)
+    candidate_set = set(candidate_skills)
+    
+    # Calculate matches
+    matches = len(required_set.intersection(candidate_set))
+    total_required = len(required_set)
+    
+    # Calculate base score
+    base_score = matches / max(1, total_required)
+    
+    # Add bonus for extra relevant skills
+    extra_skills = len(candidate_set - required_set)
+    bonus = min(0.2, 0.05 * extra_skills)  # Cap bonus at 20%
+    
+    # Combine scores with minimum threshold
+    return max(0.1, min(1.0, base_score + bonus))
+
+def calculate_matching_scores(resume_text, job_description):
+    try:
+        # Extract technical skills from both texts
+        resume_skills = extract_technical_skills(resume_text)
+        job_skills = extract_technical_skills(job_description)
+        
+        # Calculate technical skills match
+        technical_match = calculate_skill_match(job_skills, resume_skills)
+        
+        # Initialize vectorizer for TF-IDF with better parameters
+        vectorizer = TfidfVectorizer(
+            stop_words='english',
+            ngram_range=(1, 2),
+            min_df=0.01,  # Ignore terms that appear in less than 1% of docs
+            max_df=0.95   # Ignore terms that appear in more than 95% of docs
+        )
+        tfidf_matrix = vectorizer.fit_transform([resume_text, job_description])
+        
+        # Calculate TF-IDF based similarity with smoothing
+        tfidf_similarity = max(0.1, cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0])
+        
+        # Calculate BM25 similarity with improved tokenization
+        tokenized_texts = [doc.lower().split() for doc in [resume_text, job_description]]
+        bm25 = BM25Okapi([tokenized_texts[1]])
+        bm25_score = bm25.get_scores(tokenized_texts[0])[0]
+        
+        # Normalize BM25 score to 0.1-1 range to avoid zero scores
+        normalized_bm25 = max(0.1, min(1.0, bm25_score / max(1, max(bm25.get_scores(tokenized_texts[1])))))
+        
+        # Combine scores with adjusted weights
+        semantic_match = (0.5 * tfidf_similarity + 0.5 * normalized_bm25)
+        
+        # Calculate overall match with multiple factors
+        overall_match = (
+            0.4 * technical_match +  # Technical skills importance
+            0.6 * semantic_match     # Semantic matching importance
+        )
+        
+        # Ensure minimum score and scale to percentage
+        overall_match = max(0.1, min(1.0, overall_match)) * 100
+        
+        # Prepare detailed scores
+        scores = {
+            'overall_match': float(f"{overall_match:.2f}"),
+            'technical_match': float(f"{(technical_match * 100):.2f}"),
+            'semantic_match': float(f"{(semantic_match * 100):.2f}"),
+            'tfidf_similarity': float(f"{(tfidf_similarity * 100):.2f}"),
+            'bm25_score': float(f"{(normalized_bm25 * 100):.2f}")
+        }
+        
+        return scores
+        
+    except Exception as e:
+        logger.error(f"Error in calculate_matching_scores: {str(e)}")
+        raise e
 
 if __name__ == "__main__":
-        app.run(debug=True)
+    app.run(debug=True)

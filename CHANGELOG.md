@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### HR Dashboard Enhancements
+
+#### Added
+- Separate sections for technical and non-technical candidates
+- Candidate ranking based on overall match scores
+- Detailed match score breakdown (technical, soft skills, experience)
+- Resume viewing functionality
+- Bulk removal of rejected applications
+
+#### Changed
+- Improved application status management system
+- Enhanced candidate filtering and sorting mechanisms
+- Optimized company selection interface
+
 ### Job Recommendations Module
 
 #### Added

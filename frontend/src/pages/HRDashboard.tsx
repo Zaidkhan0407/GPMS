@@ -12,6 +12,9 @@ interface Application {
     cosine_similarity: number;
     bm25_score: number;
     overall_match: number;
+    technical_match: number;
+    soft_skills_match: number;
+    experience_match: number;
   };
   status: string;
   applied_at: string;
@@ -100,7 +103,20 @@ const HRDashboard: React.FC = () => {
         return 'text-yellow-500';
     }
   };
-
+  const handleRemoveRejected = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.delete('http://localhost:5000/api/applications/rejected', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (selectedCompany) {
+        fetchApplications(selectedCompany);
+      }
+    } catch (error) {
+      console.error('Error removing rejected applications:', error);
+      setError('Failed to remove rejected applications. Please try again.');
+    }
+  };
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">HR Dashboard</h1>
@@ -130,54 +146,135 @@ const HRDashboard: React.FC = () => {
 
       {selectedCompany && (
         <div className="bg-white shadow-md rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Applications</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Applications</h2>
+            <button
+              onClick={handleRemoveRejected}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Remove Rejected
+            </button>
+          </div>
           {applications.length === 0 ? (
             <p>No applications found for this position.</p>
           ) : (
-            <div className="space-y-4">
-              {applications.sort((a, b) => b.scores.overall_match - a.scores.overall_match).map((application) => (
-                <div key={application.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="text-lg font-medium">{application.user.email}</h3>
-                      <p className="text-sm text-gray-500">Applied: {new Date(application.applied_at).toLocaleDateString()}</p>
-                    </div>
-                    <span className={`font-medium ${getStatusColor(application.status)}`}>
-                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                    </span>
+            <div className="space-y-8">
+              {/* Technical Candidates Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Technical Candidates</h3>
+                <div className="space-y-4">
+                  {applications
+                    .filter(app => (app.user as any).education_type === 'technical')
+                    .sort((a, b) => b.scores.overall_match - a.scores.overall_match)
+                    .map((application) => (
+                      <div key={application.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="text-lg font-medium">{application.user.email}</h3>
+                            <p className="text-sm text-gray-500">Applied: {new Date(application.applied_at).toLocaleDateString()}</p>
+                          </div>
+                          <span className={`font-medium ${getStatusColor(application.status)}`}>
+                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium mb-1">Match Score:</h4>
+                          <div className="text-sm">
+                            <p className="font-medium">{(application.scores.overall_match * 1).toFixed(1)}%</p>
+                            <div className="mt-2">
+                              <p className="text-gray-600">Technical Match: {(application.scores.technical_match * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">Soft Skills Match: {(application.scores.soft_skills_match * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">Experience Match: {(application.scores.experience_match * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">Cosine Similarity: {(application.scores.cosine_similarity * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">BM25 Score: {(application.scores.bm25_score * 1).toFixed(1)}%</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          {application.resume_url && (
+                            <button
+                              onClick={() => handleViewResume(application.resume_url!)}
+                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              View Resume
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleUpdateStatus(application.id, 'accepted')}
+                            className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(application.id, 'rejected')}
+                            className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium mb-1">Match Score:</h4>
-                    <div className="text-sm">
-                      <p className="font-medium">{Math.abs(application.scores.overall_match).toFixed(1)}%</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    {application.resume_url && (
-                      <button
-                        onClick={() => handleViewResume(application.resume_url!)}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        View Resume
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleUpdateStatus(application.id, 'accepted')}
-                      className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleUpdateStatus(application.id, 'rejected')}
-                      className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                      Reject
-                    </button>
+              </div>
+              {/* Non-Technical Candidates Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Non-Technical Candidates</h3>
+                <div className="space-y-4">
+                  {applications
+                    .filter(app => (app.user as any).education_type === 'non-technical')
+                    .sort((a, b) => b.scores.overall_match - a.scores.overall_match)
+                    .map((application) => (
+                      <div key={application.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="text-lg font-medium">{application.user.email}</h3>
+                            <p className="text-sm text-gray-500">Applied: {new Date(application.applied_at).toLocaleDateString()}</p>
+                          </div>
+                          <span className={`font-medium ${getStatusColor(application.status)}`}>
+                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium mb-1">Match Score:</h4>
+                          <div className="text-sm">
+                            <p className="font-medium">{(application.scores.overall_match * 1).toFixed(1)}%</p>
+                            <div className="mt-2">
+                              <p className="text-gray-600">Technical Match: {(application.scores.technical_match * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">Soft Skills Match: {(application.scores.soft_skills_match * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">Experience Match: {(application.scores.experience_match * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">Cosine Similarity: {(application.scores.cosine_similarity * 1).toFixed(1)}%</p>
+                              <p className="text-gray-600">BM25 Score: {(application.scores.bm25_score * 1).toFixed(1)}%</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          {application.resume_url && (
+                            <button
+                              onClick={() => handleViewResume(application.resume_url!)}
+                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              View Resume
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleUpdateStatus(application.id, 'accepted')}
+                            className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(application.id, 'rejected')}
+                            className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            )}
         </div>
       )}
     </div>

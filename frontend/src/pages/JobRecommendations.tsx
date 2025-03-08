@@ -13,7 +13,14 @@ interface Job {
   position: string;
   description: string;
   requirements: string;
-  similarity_score: number;
+  match_details: {
+    overall_match: number;
+    technical_match: number;
+    soft_skills_match: number;
+    experience_match: number;
+    semantic_similarity: number;
+    contextual_similarity: number;
+  };
 }
 
 const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selectedModules }) => {
@@ -112,13 +119,26 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
         </div>
       )}
 
+      {!loading && !error && recommendedJobs.length === 0 && (
+        <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+          <p className="text-gray-600">No job recommendations available. Please ensure you have uploaded a resume and selected "Job Recommendations" from the modules.</p>
+        </div>
+      )}
+
       {recommendedJobs.length > 0 && (
         <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
           <h2 className="text-2xl font-bold mb-4">Recommended Jobs</h2>
           {recommendedJobs.map((job) => (
             <div key={job.id} className="mb-6 p-4 border rounded">
               <h3 className="text-xl font-semibold">{job.name} - {job.position}</h3>
-              <p className="text-gray-600 mb-2">Matching Score: {(job.similarity_score * 100).toFixed(2)}%</p>
+              <p className="text-gray-600 mb-2">Overall Match: {(job.match_details.overall_match * 100).toFixed(1)}%</p>
+              <div className="text-sm text-gray-500 mb-2">
+                <p>Technical Match: {(job.match_details.technical_match * 100).toFixed(1)}%</p>
+                <p>Soft Skills Match: {job.match_details.soft_skills_match ? (job.match_details.soft_skills_match * 100).toFixed(1) : 'N/A'}%</p>
+                <p>Experience Match: {job.match_details.experience_match ? (job.match_details.experience_match * 100).toFixed(1) : 'N/A'}%</p>
+                <p>Semantic Similarity: {(job.match_details.semantic_similarity * 100).toFixed(1)}%</p>
+                <p>Contextual Match: {(job.match_details.contextual_similarity * 100).toFixed(1)}%</p>
+              </div>
               <h4 className="font-medium mb-1">Description:</h4>
               <p className="text-gray-700 mb-2">{job.description}</p>
               <h4 className="font-medium mb-1">Requirements:</h4>
