@@ -193,19 +193,19 @@ const HRDashboard: React.FC = () => {
                           <h5 className="text-sm font-medium text-gray-700 mb-3">Match Scores</h5>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 hover:border-blue-200 transition-all duration-300">
-                              <p className="font-semibold text-blue-600 text-lg">{(application.scores.overall_match * 100).toFixed(1)}%</p>
+                              <p className="font-semibold text-blue-600 text-lg">{(application.scores.overall_match * 1).toFixed(1)}%</p>
                               <p className="text-blue-600 text-sm">Overall Match</p>
                             </div>
                             <div className="bg-green-50 p-3 rounded-lg border border-green-100 hover:border-green-200 transition-all duration-300">
-                              <p className="font-semibold text-green-600 text-lg">{(application.scores.technical_match * 100).toFixed(1)}%</p>
+                              <p className="font-semibold text-green-600 text-lg">{(application.scores.technical_match * 1).toFixed(1)}%</p>
                               <p className="text-green-600 text-sm">Technical Match</p>
                             </div>
                             <div className="bg-purple-50 p-3 rounded-lg border border-purple-100 hover:border-purple-200 transition-all duration-300">
-                              <p className="font-semibold text-purple-600 text-lg">{(application.scores.soft_skills_match * 100).toFixed(1)}%</p>
+                              <p className="font-semibold text-purple-600 text-lg">{(application.scores.soft_skills_match * 1).toFixed(1)}%</p>
                               <p className="text-purple-600 text-sm">Soft Skills</p>
                             </div>
                             <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 hover:border-indigo-200 transition-all duration-300">
-                              <p className="font-semibold text-indigo-600 text-lg">{(application.scores.experience_match * 100).toFixed(1)}%</p>
+                              <p className="font-semibold text-indigo-600 text-lg">{(application.scores.experience_match * 1).toFixed(1)}%</p>
                               <p className="text-indigo-600 text-sm">Experience</p>
                             </div>
                           </div>
