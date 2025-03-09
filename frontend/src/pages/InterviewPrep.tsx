@@ -89,65 +89,113 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Interview Preparation</h1>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 animate-gradient-x">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 animate-fade-in-down">
+          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300">Interview Preparation</h1>
+          <p className="text-lg text-gray-600 font-medium">Practice and perfect your interview skills with AI-powered feedback</p>
         </div>
-      )}
 
-      {questions.length > 0 && (
-        <form onSubmit={handleSubmit} className="mb-8">
-          <div className="mb-4">
-            <label htmlFor="question" className="block text-sm font-medium text-gray-700">
-              Select Interview Question
-            </label>
-            <select
-              id="question"
-              value={selectedQuestion}
-              onChange={(e) => setSelectedQuestion(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            >
-              <option value="">Select a question</option>
-              {questions.map((q, index) => (
-                <option key={index} value={q}>
-                  {q}
-                </option>
-              ))}
-            </select>
+        {error && (
+          <div className="mb-8 transform hover:scale-102 transition-all duration-300 animate-fade-in">
+            <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-5 backdrop-blur-xl shadow-lg hover:shadow-red-500/20">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-600 font-medium">{error}</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mb-4">
-            <label htmlFor="answer" className="block text-sm font-medium text-gray-700">
-              Your Answer
-            </label>
-            <textarea
-              id="answer"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              rows={3}
-              placeholder="Enter your answer to the question"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            {loading ? 'Analyzing...' : 'Get Feedback'}
-          </button>
-        </form>
-      )}
+        )}
 
-      {feedback && (
-        <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-          <h2 className="text-2xl font-bold mb-4">Feedback</h2>
-          <pre className="whitespace-pre-wrap">{feedback}</pre>
-        </div>
-      )}
+        {questions.length > 0 && (
+          <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in-up">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 hover:border-gray-200 transition-all duration-300 overflow-hidden">
+              <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                <label htmlFor="question" className="block text-xl font-semibold text-gray-900 mb-2 filter drop-shadow-lg">
+                  Select Interview Question
+                </label>
+                <p className="text-sm text-gray-600">Choose a question to practice your response</p>
+              </div>
+              <div className="px-8 py-6 hover:bg-gray-50 transition-colors duration-300">
+                <select
+                  id="question"
+                  value={selectedQuestion}
+                  onChange={(e) => setSelectedQuestion(e.target.value)}
+                  className="w-full rounded-lg border-gray-200 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
+                >
+                  <option value="">Select a question</option>
+                  {questions.map((q, index) => (
+                    <option key={index} value={q} className="py-2 text-gray-900">
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+  
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 hover:border-gray-200 transition-all duration-300 overflow-hidden">
+              <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                <label htmlFor="answer" className="block text-xl font-semibold text-gray-900 mb-2 filter drop-shadow-lg">
+                  Your Answer
+                </label>
+                <p className="text-sm text-gray-600">Provide your response to the selected question</p>
+              </div>
+              <div className="px-8 py-6 hover:bg-gray-50 transition-colors duration-300">
+                <textarea
+                  id="answer"
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  className="w-full rounded-lg border-gray-200 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
+                  rows={5}
+                  placeholder="Enter your answer to the question"
+                />
+              </div>
+            </div>
+  
+            <div className="flex justify-center">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-300 border border-transparent hover:border-blue-700"
+              >
+                {loading ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing...
+                  </span>
+                ) : (
+                  'Get Feedback'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+  
+        {feedback && (
+          <div className="mt-12 transform hover:scale-102 transition-all duration-300 animate-fade-in-up">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-colors duration-300">
+              <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1 filter drop-shadow-lg">AI Feedback</h2>
+                <p className="text-sm text-gray-600">Analysis of your interview response</p>
+              </div>
+              <div className="px-8 py-6 hover:bg-gray-50 transition-colors duration-300">
+                <div className="prose max-w-none">
+                  <pre className="whitespace-pre-wrap text-gray-700 bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors duration-300">{feedback}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

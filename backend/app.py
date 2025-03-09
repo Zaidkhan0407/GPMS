@@ -136,13 +136,12 @@ def recommend_jobs(resume_text):
                     'position': job['position'],
                     'description': job['description'],
                     'requirements': job['requirements'],
-                    'match_details': {
-                        'overall_match': scores['overall_match'] / 100,  # Convert percentage back to decimal
-                        'technical_match': scores['technical_match'] / 100,
-                        'soft_skills_match': 0.75,  # Default value for now
-                        'experience_match': 0.80,  # Default value for now
-                        'semantic_similarity': scores['tfidf_similarity'] / 100,
-                        'contextual_similarity': scores['bm25_score'] / 100
+                    'scores': {
+                        'overall_match': float(f"{scores['overall_match']:.4f}"),
+                        'technical_match': float(f"{scores['technical_match']:.4f}"),
+                        'semantic_match': float(f"{scores['semantic_match']:.4f}"),
+                        'tfidf_similarity': float(f"{scores['tfidf_similarity']:.4f}"),
+                        'bm25_score': float(f"{scores['bm25_score']:.4f}")
                     },
                     '_response_time_ms': int(time.time() * 1000)
                 }
@@ -448,14 +447,54 @@ def allowed_file(filename):
     except Exception:
         return False
 
-# Add after existing imports
-from datetime import datetime
-from collections import defaultdict
-import spacy
-import textract
-from sklearn.preprocessing import MinMaxScaler
+# Add this route after your existing routes
+@app.route("/api/jobs/recommendations", methods=["POST"])
+@jwt_required()
+def get_job_recommendations():
+    try:
+        if 'resume' not in request.files:
+            return jsonify({'error': 'Resume file required'}), 400
+            
+        resume_file = request.files['resume']
+        if not allowed_file(resume_file.filename):
+            return jsonify({'error': 'Invalid file type'}), 400
 
-# Add new functions after existing ones
+        # Extract text from resume
+        file_ext = resume_file.filename.rsplit('.', 1)[1].lower()
+        resume_text = extract_text_from_file(resume_file, file_ext)
+
+        # Get all jobs from the database
+        jobs = list(mongo.db.companies.find())
+        
+        recommended_jobs = []
+        for job in jobs:
+            job_text = f"{job['position']} {job['description']} {job['requirements']}"
+            
+            # Calculate matching scores
+            scores = calculate_matching_scores(resume_text, job_text)
+            
+            # Add job to recommendations if match score is above threshold
+            if scores['overall_match'] > 0.3:  # You can adjust this threshold
+                recommended_jobs.append({
+                    'id': str(job['_id']),
+                    'name': job['name'],
+                    'position': job['position'],
+                    'description': job['description'],
+                    'requirements': job['requirements'],
+                    'match_details': scores
+                })
+        
+        # Sort jobs by match score
+        recommended_jobs.sort(key=lambda x: x['match_details']['overall_match'], reverse=True)
+        
+        return jsonify({
+            'jobs': recommended_jobs
+        })
+
+    except Exception as e:
+        logger.error(f"Error generating job recommendations: {str(e)}")
+        return jsonify({'error': 'An error occurred while recommending jobs'}), 500
+
 def process_application(resume_file, job_id, user_id):
     """Process and analyze a job application"""
     try:
@@ -542,22 +581,20 @@ def calculate_matching_scores(resume_text, job_text):
         
         return {
             'overall_match': normalized_score,
-            'cosine_similarity': cosine_sim,
+            'semantic_match': cosine_sim,
+            'tfidf_similarity': cosine_sim,
             'bm25_score': normalized_bm25,
-            'technical_match': technical_score,
-            'soft_skills_match': soft_skills_score,
-            'experience_match': experience_score
+            'technical_match': technical_score
         }
         
     except Exception as e:
         logger.error(f"Score calculation error: {str(e)}")
         return {
-            'cosine_similarity': 0,
-            'bm25_score': 0,
-            'technical_match': 0,
-            'soft_skills_match': 0,
-            'experience_match': 0,
-            'overall_match': 0
+            'overall_match': float('0.00'),
+            'technical_match': float('0.00'),
+            'semantic_match': float('0.00'),
+            'tfidf_similarity': float('0.00'),
+            'bm25_score': float('0.00')
         }
 
 def extract_technical_skills(text):
