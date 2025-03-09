@@ -340,7 +340,7 @@ Provide your feedback in a clear, concise manner with specific points for improv
         return jsonify({'error': 'An error occurred during interview preparation'}), 500
 
 def allowed_file(filename):
-    """Check if the file has an allowed extension (PDF or DOCX)."""
+    """Check ifthe file has an allowed extension (PDF or DOCX)."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'docx'}
 
 if __name__ == "__main__":
