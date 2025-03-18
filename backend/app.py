@@ -64,10 +64,21 @@ def _get_vectorizer_and_corpus():
     6. Tokenizes the corpus for BM25 implementation
     7. Returns the vectorizer instance, tokenized corpus, and preprocessed job corpus
     """
-    # Retrieve all job documents from the database
+    # Retrieve all job documents from the database with additional fields
     jobs = list(mongo.db.companies.find(
         {},
-        {'name': 1, 'position': 1, 'description': 1, 'requirements': 1, '_id': 1}
+        {
+            'name': 1, 
+            'position': 1, 
+            'description': 1, 
+            'requirements': 1, 
+            '_id': 1,
+            'location': 1,  # Add location
+            'salary_min': 1,  # Add salary fields
+            'salary_max': 1,
+            'hr_email': 1,
+            'hr_code': 1
+        }
     ))
 
     # Extract relevant fields from each job document
@@ -97,24 +108,19 @@ def _get_vectorizer_and_corpus():
     return vectorizer, tokenized_corpus, weighted_jobs
 
 def recommend_jobs(resume_text):
-    """Enhanced job recommender with comprehensive matching capabilities"""
     try:
-        # Get cached resources
         vectorizer, tokenized_corpus, weighted_jobs = _get_vectorizer_and_corpus() 
         jobs = [job for job, _ in weighted_jobs]
 
-        # If no jobs are available, return an empty list
         if not jobs:
             logger.warning("No jobs found in the database.")
             return []
 
-        # Calculate comprehensive matching scores for each job
         job_scores = []
         for job in jobs:
-            # Combine all job text fields for matching
-            job_text = f"{job['name']} {job['position']} {job['description']} {job['requirements']}"
+            job_text = f"{job.get('name', '')} {job.get('position', '')} {job.get('description', '')} {job.get('requirements', '')}"
             
-            # Calculate comprehensive matching scores using our enhanced algorithm
+            # Calculate matching scores
             matching_scores = calculate_matching_scores(resume_text, job_text)
             
             job_scores.append({
@@ -122,31 +128,30 @@ def recommend_jobs(resume_text):
                 'scores': matching_scores
             })
 
-        # Sort jobs by overall match score in descending order
         sorted_jobs = sorted(job_scores, key=lambda x: x['scores']['overall_match'], reverse=True)
         
-        # Prepare the recommended jobs with detailed scores
         recommended_jobs = []
-        for job_score in sorted_jobs[:5]:  # Get top 5 matches
-            if job_score['scores']['overall_match'] > 0:  # Include all non-zero matches
+        for job_score in sorted_jobs[:5]:
+            if job_score['scores']['overall_match'] > 0:
                 job = job_score['job']
                 scores = job_score['scores']
                 
                 job_data = {
                     'id': str(job['_id']),
-                    'name': job['name'],
-                    'position': job['position'],
-                    'description': job['description'],
-                    'requirements': job['requirements'],
+                    'name': job.get('name', ''),
+                    'position': job.get('position', ''),
+                    'description': job.get('description', ''),
+                    'requirements': job.get('requirements', ''),
+                    'location': job.get('location', 'Location not specified'),
+                    'salary_min': float(job.get('salary_min', 0)),
+                    'salary_max': float(job.get('salary_max', 0)),
                     'match_details': {
-                        'overall_match': scores['overall_match'] / 100,  # Convert percentage back to decimal
+                        'overall_match': scores['overall_match'] / 100,
                         'technical_match': scores['technical_match'] / 100,
-                        'soft_skills_match': 0.75,  # Default value for now
-                        'experience_match': 0.80,  # Default value for now
-                        'semantic_similarity': scores['tfidf_similarity'] / 100,
-                        'contextual_similarity': scores['bm25_score'] / 100
-                    },
-                    '_response_time_ms': int(time.time() * 1000)
+                        'semantic_match': scores['semantic_match'] / 100,
+                        'tfidf_similarity': scores['tfidf_similarity'] / 100,
+                        'bm25_score': scores['bm25_score'] / 100
+                    }
                 }
                 recommended_jobs.append(job_data)
         

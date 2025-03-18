@@ -16,6 +16,8 @@ interface Job {
   location: string;
   salary_min: number | null;
   salary_max: number | null;
+  hr_email: string;
+  hr_code: string;
   experience: string;
   match_details: {
     overall_match: number;
@@ -100,22 +102,19 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
     }
 
     try {
-      setLoading(true);
-      setError(null);
-      setRecommendedJobs([]);
-
-      const formData = new FormData();
-      formData.append('resume', resume);
-      // Change this line to match the backend endpoint
-      formData.append('module', 'job_recommendations');
-
       const token = getAuthToken();
       if (!token) {
         setError('Authentication required. Please log in.');
         return;
       }
 
-      // Update the endpoint to match your backend
+      setLoading(true);
+      setError(null);
+      setRecommendedJobs([]);
+
+      const formData = new FormData();
+      formData.append('resume', resume);
+
       const response = await axios.post('http://localhost:5000/api/jobs/recommendations', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -123,14 +122,26 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
         }
       });
 
-      if (response.data && response.data.jobs) {
-        setRecommendedJobs(response.data.jobs);
+      if (response.data.jobs) {
+        setRecommendedJobs(response.data.jobs.map((job: Job) => ({
+          ...job,
+          location: job.location || 'Location not specified',
+          salary_min: job.salary_min ?? 0,
+          salary_max: job.salary_max ?? 0,
+          match_details: {
+            overall_match: job.match_details?.overall_match ?? 0,
+            technical_match: job.match_details?.technical_match ?? 0,
+            semantic_match: job.match_details?.semantic_match ?? 0,
+            tfidf_similarity: job.match_details?.tfidf_similarity ?? 0,
+            bm25_score: job.match_details?.bm25_score ?? 0
+          }
+        })));
       } else {
-        setError('No job recommendations found. Please try again.');
+        setError('No matching jobs found');
       }
     } catch (error: any) {
       console.error('Error recommending jobs:', error);
-      setError(error.response?.data?.error || 'An error occurred while recommending jobs. Please try again.');
+      setError(error.response?.data?.error || 'Failed to get job recommendations');
     } finally {
       setLoading(false);
     }
@@ -149,6 +160,12 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
       return;
     }
 
+    const token = getAuthToken();
+    if (!token) {
+      setError('Authentication required. Please log in.');
+      return;
+    }
+
     setApplying(jobId);
     setError(null);
 
@@ -156,13 +173,20 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
     formData.append('resume', resume);
 
     try {
-      const token = getAuthToken();
-      await axios.post(`http://localhost:5000/api/jobs/${jobId}/apply`, formData, {
+      const response = await axios.post(`http://localhost:5000/api/jobs/${jobId}/apply`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
+        },
+        validateStatus: function (status) {
+          return status < 500;
         }
       });
+
+      if (response.status === 401) {
+        setError('Your session has expired. Please log in again.');
+        return;
+      }
       const updatedJobs = recommendedJobs.map(job => {
         if (job.id === jobId) {
           return { ...job, applied: true };
@@ -195,7 +219,7 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
                 name="salaryMin"
                 value={filters.salaryMin}
                 onChange={handleFilterChange}
-                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="Enter minimum salary"
               />
             </div>
@@ -206,7 +230,7 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
                 name="salaryMax"
                 value={filters.salaryMax}
                 onChange={handleFilterChange}
-                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="Enter maximum salary"
               />
             </div>
@@ -217,7 +241,7 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
                 name="location"
                 value={filters.location}
                 onChange={handleFilterChange}
-                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="Enter location"
               />
             </div>
@@ -228,10 +252,11 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
                 name="technology"
                 value={filters.technology}
                 onChange={handleFilterChange}
-                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Enter technology (e.g. Python, Java)"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                placeholder="Enter technology"
               />
             </div>
+
           </div>
         </div>
 
@@ -276,7 +301,7 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
               <div key={job.id} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-all duration-300 hover:shadow-blue-100">
                 <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-grow">
                       <h3 className="text-2xl font-bold text-gray-900">{job.name}</h3>
                       <p className="mt-1 text-lg text-gray-600">{job.position}</p>
                       <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
@@ -285,30 +310,28 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
-                          {job.location}
+                          {job.location !== 'Location not specified' ? job.location : 'Location not specified'}
                         </div>
                         <div className="flex items-center">
                           <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          ₹{(job.salary_min || 0).toLocaleString()} - ₹{(job.salary_max || 0).toLocaleString()}
+                          ₹{job.salary_min?.toLocaleString() || 0} - ₹{job.salary_max?.toLocaleString() || 0}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="text-right">
-                        <p className="text-3xl font-bold text-blue-600">{((job.match_details?.overall_match ?? 0)*100).toFixed(1)}%</p>
-                        <p className="text-sm text-gray-500">Match Score</p>
-                      </div>
+                    <div className="flex flex-col items-center bg-white rounded-lg p-4 shadow-sm">
+                      <p className="text-3xl font-bold text-blue-600">{((job.match_details?.overall_match ?? 0)*100).toFixed(1)}%</p>
+                      <p className="text-sm text-gray-500">Match Score</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="px-8 py-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 hover:border-blue-200 transition-all duration-300">
+                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 hover:border-blue-200 transition-all duration-300 flex flex-col items-center">
                       <p className="text-xl font-bold text-blue-600">{((job.match_details?.technical_match ?? 0) * 100).toFixed(1)}%</p>
-                      <p className="text-sm text-gray-600">Technical Match</p>
+                      <p className="text-sm text-gray-600 text-center">Technical Match</p>
                     </div>
                     <div className="bg-green-50 rounded-xl p-4 border border-green-100 hover:border-green-200 transition-all duration-300">
                       <p className="text-xl font-bold text-green-600">{((job.match_details?.semantic_match ?? 0) * 100).toFixed(1)}%</p>
@@ -366,3 +389,4 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
 };
 
 export default JobRecommendations;
+
