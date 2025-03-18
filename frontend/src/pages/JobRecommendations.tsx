@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { getAuthToken } from '../context/AuthContext';
 
@@ -13,6 +13,10 @@ interface Job {
   position: string;
   description: string;
   requirements: string;
+  location: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  experience: string;
   match_details: {
     overall_match: number;
     technical_match: number;
@@ -27,6 +31,67 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    salaryMin: '',
+    salaryMax: '',
+    location: '',
+    technology: ''
+  });
+
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  const validateSalary = (value: string): number | null => {
+    const num = parseInt(value);
+    return !isNaN(num) && num >= 0 ? num : null;
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'salaryMin' || name === 'salaryMax') {
+      // Only allow positive numbers or empty string
+      if (value === '' || /^\d+$/.test(value)) {
+        setFilters(prev => ({ ...prev, [name]: value }));
+      }
+    } else {
+      // Sanitize other inputs
+      const sanitizedValue = value.trim();
+      setFilters(prev => ({ ...prev, [name]: sanitizedValue }));
+    }
+  };
+
+  const filteredJobs = useMemo(() => {
+    return recommendedJobs.filter((job: Job) => {
+      const salaryMin = validateSalary(debouncedFilters.salaryMin);
+      const salaryMax = validateSalary(debouncedFilters.salaryMax);
+
+      // Salary validation
+      if (salaryMin && salaryMax && salaryMin > salaryMax) {
+        return false;
+      }
+
+      const matchesSalaryMin = !salaryMin || (job.salary_min && job.salary_min >= salaryMin);
+      const matchesSalaryMax = !salaryMax || (job.salary_max && job.salary_max <= salaryMax);
+      
+      // Case-insensitive search with trimmed values
+      const location = debouncedFilters.location.toLowerCase().trim();
+      const technology = debouncedFilters.technology.toLowerCase().trim();
+      
+      const matchesLocation = !location || (job.location && job.location.toLowerCase().includes(location));
+      const matchesTechnology = !technology || (job.requirements && job.requirements.toLowerCase().includes(technology));
+
+      return matchesSalaryMin && matchesSalaryMax && matchesLocation && matchesTechnology;
+    });
+  }, [recommendedJobs, debouncedFilters]);
+
 
   const handleSubmit = useCallback(async () => {
     if (!resume) {
@@ -121,6 +186,55 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
           <p className="text-lg text-gray-600 font-medium">Discover your perfect career match with AI-powered recommendations</p>
         </div>
 
+        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Salary (₹)</label>
+              <input
+                type="number"
+                name="salaryMin"
+                value={filters.salaryMin}
+                onChange={handleFilterChange}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter minimum salary"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Maximum Salary (₹)</label>
+              <input
+                type="number"
+                name="salaryMax"
+                value={filters.salaryMax}
+                onChange={handleFilterChange}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter maximum salary"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                name="location"
+                value={filters.location}
+                onChange={handleFilterChange}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter location"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Technology</label>
+              <input
+                type="text"
+                name="technology"
+                value={filters.technology}
+                onChange={handleFilterChange}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter technology (e.g. Python, Java)"
+              />
+            </div>
+          </div>
+        </div>
+
         {error && (
           <div className="mb-8 transform hover:scale-102 transition-all duration-300 animate-fade-in">
             <div className="bg-red-50 border-l-4 border-red-400 p-5 rounded-lg shadow-lg">
@@ -158,17 +272,32 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
 
         {recommendedJobs.length > 0 && (
           <div className="space-y-6 animate-fade-in-up">
-            {recommendedJobs.map((job) => (
+            {filteredJobs.map((job) => (
               <div key={job.id} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-all duration-300 hover:shadow-blue-100">
                 <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="text-2xl font-bold text-gray-900">{job.name}</h3>
                       <p className="mt-1 text-lg text-gray-600">{job.position}</p>
+                      <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {job.location}
+                        </div>
+                        <div className="flex items-center">
+                          <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          ₹{(job.salary_min || 0).toLocaleString()} - ₹{(job.salary_max || 0).toLocaleString()}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-blue-600">{(job.match_details.overall_match).toFixed(1)}%</p>
+                        <p className="text-3xl font-bold text-blue-600">{((job.match_details?.overall_match ?? 0)*100).toFixed(1)}%</p>
                         <p className="text-sm text-gray-500">Match Score</p>
                       </div>
                     </div>
@@ -178,19 +307,19 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
                 <div className="px-8 py-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 hover:border-blue-200 transition-all duration-300">
-                      <p className="text-xl font-bold text-blue-600">{(job.match_details.technical_match).toFixed(1)}%</p>
+                      <p className="text-xl font-bold text-blue-600">{((job.match_details?.technical_match ?? 0) * 100).toFixed(1)}%</p>
                       <p className="text-sm text-gray-600">Technical Match</p>
                     </div>
                     <div className="bg-green-50 rounded-xl p-4 border border-green-100 hover:border-green-200 transition-all duration-300">
-                      <p className="text-xl font-bold text-green-600">{(job.match_details.semantic_match).toFixed(1)}%</p>
+                      <p className="text-xl font-bold text-green-600">{((job.match_details?.semantic_match ?? 0) * 100).toFixed(1)}%</p>
                       <p className="text-sm text-gray-600">Semantic Match</p>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 hover:border-purple-200 transition-all duration-300">
-                      <p className="text-xl font-bold text-purple-600">{(job.match_details.tfidf_similarity).toFixed(1)}%</p>
+                      <p className="text-xl font-bold text-purple-600">{((job.match_details?.tfidf_similarity ?? 0) * 100).toFixed(1)}%</p>
                       <p className="text-sm text-gray-600">TF-IDF Score</p>
                     </div>
                     <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100 hover:border-indigo-200 transition-all duration-300">
-                      <p className="text-xl font-bold text-indigo-600">{(job.match_details.bm25_score).toFixed(1)}%</p>
+                      <p className="text-xl font-bold text-indigo-600">{((job.match_details?.bm25_score ?? 0) * 100).toFixed(1)}%</p>
                       <p className="text-sm text-gray-600">BM25 Score</p>
                     </div>
                   </div>

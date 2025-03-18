@@ -6,7 +6,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from bson import ObjectId
 import os
-import tempfile
 from PyPDF2 import PdfReader
 from huggingface_hub import InferenceClient
 import re
@@ -23,6 +22,9 @@ from collections import defaultdict
 import spacy
 import textract
 from sklearn.preprocessing import MinMaxScaler
+import tempfile
+from io import BytesIO
+from docx import Document
 
 # Load environment variables
 load_dotenv()
@@ -136,12 +138,13 @@ def recommend_jobs(resume_text):
                     'position': job['position'],
                     'description': job['description'],
                     'requirements': job['requirements'],
-                    'scores': {
-                        'overall_match': float(f"{scores['overall_match']:.4f}"),
-                        'technical_match': float(f"{scores['technical_match']:.4f}"),
-                        'semantic_match': float(f"{scores['semantic_match']:.4f}"),
-                        'tfidf_similarity': float(f"{scores['tfidf_similarity']:.4f}"),
-                        'bm25_score': float(f"{scores['bm25_score']:.4f}")
+                    'match_details': {
+                        'overall_match': scores['overall_match'] / 100,  # Convert percentage back to decimal
+                        'technical_match': scores['technical_match'] / 100,
+                        'soft_skills_match': 0.75,  # Default value for now
+                        'experience_match': 0.80,  # Default value for now
+                        'semantic_similarity': scores['tfidf_similarity'] / 100,
+                        'contextual_similarity': scores['bm25_score'] / 100
                     },
                     '_response_time_ms': int(time.time() * 1000)
                 }
@@ -157,45 +160,61 @@ def recommend_jobs(resume_text):
 from docx import Document
 
 def extract_text_from_file(file, file_type):
-    """Extracts text from PDF or DOCX files with improved error handling and text processing."""
-    temp_file = None
+    """Extracts text from PDF or DOCX files with enhanced error handling and fallback methods."""
+    text = ""
     try:
-        text = ""
-        # Save the file to a temporary location to avoid filename issues
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_type}')
-        file.save(temp_file.name)
-        file.seek(0)  # Reset file pointer for potential reuse
-        temp_file.close()  # Close the temp file handle
-
-        if file_type == "pdf":
-            with open(temp_file.name, 'rb') as pdf_file:
-                reader = PdfReader(pdf_file)
-                for page in reader.pages:
-                    extracted = page.extract_text()
-                    if extracted:
-                        text += extracted + "\n"
-        elif file_type == "docx":
-            doc = Document(temp_file.name)
-            text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
-            doc.close()  # Close the document
-
-        # Process and normalize the extracted text
-        text = text.strip()
-        text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
-        text = re.sub(r'[^\w\s.,;:!?-]', '', text)  # Remove special characters except basic punctuation
+        # Create a temporary file to store the content
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_type}') as temp_file:
+            file_content = file.read()
+            temp_file.write(file_content)
+            temp_file_path = temp_file.name
         
+        if file_type == "pdf":
+            try:
+                # First attempt with PyPDF2
+                reader = PdfReader(temp_file_path)
+                for page in reader.pages:
+                    try:
+                        extracted = page.extract_text()
+                        if extracted:
+                            text += extracted + "\n"
+                    except Exception as page_error:
+                        logging.warning(f"Error extracting text from page: {str(page_error)}")
+                        continue
+                
+                # If PyPDF2 fails to extract text, try textract as fallback
+                if not text.strip():
+                    text = textract.process(temp_file_path, method='pdfminer').decode('utf-8')
+            except Exception as pdf_error:
+                logging.error(f"PDF extraction error: {str(pdf_error)}")
+                # Final fallback to textract
+                text = textract.process(temp_file_path, method='pdfminer').decode('utf-8')
+                
+        elif file_type == "docx":
+            try:
+                doc = Document(temp_file_path)
+                text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
+            except Exception as docx_error:
+                logging.error(f"DOCX extraction error: {str(docx_error)}")
+                # Fallback to textract for DOCX
+                text = textract.process(temp_file_path, extension='docx').decode('utf-8')
+        
+        # Clean up temporary file
+        try:
+            os.unlink(temp_file_path)
+        except Exception as cleanup_error:
+            logging.warning(f"Error cleaning up temporary file: {str(cleanup_error)}")
+            
+        return text
+        
+        text = text.strip()
+        if not text:
+            raise ValueError("No text could be extracted from the file after trying multiple methods")
+            
         return text
     except Exception as e:
-        logger.error(f"Error extracting text from file: {str(e)}")
-        raise e
-    finally:
-        # Clean up temporary file in finally block
-        if temp_file and os.path.exists(temp_file.name):
-            try:
-                os.unlink(temp_file.name)
-            except Exception as e:
-                logger.error(f"Error cleaning up temporary file: {str(e)}")
-                # Continue execution even if cleanup fails 
+        logging.error(f"Error extracting text from {file_type} file: {str(e)}")
+        raise ValueError(f"Failed to extract text from {file_type} file after exhausting all extraction methods")
 
 # Function to generate interview questions based on resume content
 def generate_interview_questions(resume_text):
@@ -221,7 +240,42 @@ Generate 5 interview questions that are specific to the candidate's experience, 
         logger.error(f"Error generating interview questions: {str(e)}")
         return []
 
-# Routes (unchanged, but now using the optimized recommend_jobs function)
+# Routes
+@app.route("/api/jobs/recommendations", methods=["POST", "OPTIONS"])
+@jwt_required()
+def get_job_recommendations():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+        
+    try:
+        if 'resume' not in request.files:
+            return jsonify({'error': 'No resume file provided'}), 400
+            
+        resume_file = request.files['resume']
+        if resume_file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+            
+        # Get file extension
+        file_extension = resume_file.filename.rsplit('.', 1)[1].lower()
+        if file_extension not in ['pdf', 'docx']:
+            return jsonify({'error': 'Invalid file format. Only PDF and DOCX files are allowed'}), 400
+            
+        # Extract text from resume
+        resume_text = extract_text_from_file(resume_file, file_extension)
+        if not resume_text:
+            return jsonify({'error': 'Could not extract text from resume'}), 400
+            
+        # Get job recommendations
+        recommended_jobs = recommend_jobs(resume_text)
+        if not recommended_jobs:
+            return jsonify({'jobs': [], 'message': 'No matching jobs found'}), 200
+            
+        return jsonify({'jobs': recommended_jobs}), 200
+        
+    except Exception as e:
+        logger.error(f"Error in job recommendations: {str(e)}")
+        return jsonify({'error': 'An error occurred while processing your request'}), 500
+
 @app.route("/api/signup", methods=["POST"])
 def signup():
     data = request.json
@@ -229,7 +283,6 @@ def signup():
     password = data.get("password")
     role = data.get("role")
     hr_code = data.get("hr_code") if role == "hr" else None
-    education_type = data.get("education_type", "technical")
 
     if not email or not password or not role:
         return jsonify({"error": "Missing required fields"}), 400
@@ -250,8 +303,7 @@ def signup():
         "email": email,
         "password": hashed_password,
         "role": role,
-        "hr_code": hr_code if role == "hr" else None,
-        "education_type": education_type
+        "hr_code": hr_code if role == "hr" else None
     }).inserted_id
 
     token = create_access_token(identity=str(user_id))
@@ -328,7 +380,10 @@ def manage_company(company_id):
                     "description": data["description"],
                     "requirements": data["requirements"],
                     "hr_email": data["hr_email"],
-                    "hr_code": data["hr_code"]
+                    "hr_code": data["hr_code"],
+                    "location": data["location"],
+                    "salary_min": data["salary_min"],
+                    "salary_max": data["salary_max"]
                 }}
             )
             
@@ -439,62 +494,16 @@ Provide your feedback in a clear, concise manner with specific points for improv
 
 def allowed_file(filename):
     """Check if the file has an allowed extension (PDF or DOCX)."""
-    try:
-        if not filename or '.' not in filename:
-            return False
-        extension = filename.rsplit('.', 1)[1].lower()
-        return extension in {'pdf', 'docx'}
-    except Exception:
-        return False
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'docx'}
 
-# Add this route after your existing routes
-@app.route("/api/jobs/recommendations", methods=["POST"])
-@jwt_required()
-def get_job_recommendations():
-    try:
-        if 'resume' not in request.files:
-            return jsonify({'error': 'Resume file required'}), 400
-            
-        resume_file = request.files['resume']
-        if not allowed_file(resume_file.filename):
-            return jsonify({'error': 'Invalid file type'}), 400
+# Add after existing imports
+from datetime import datetime
+from collections import defaultdict
+import spacy
+import textract
+from sklearn.preprocessing import MinMaxScaler
 
-        # Extract text from resume
-        file_ext = resume_file.filename.rsplit('.', 1)[1].lower()
-        resume_text = extract_text_from_file(resume_file, file_ext)
-
-        # Get all jobs from the database
-        jobs = list(mongo.db.companies.find())
-        
-        recommended_jobs = []
-        for job in jobs:
-            job_text = f"{job['position']} {job['description']} {job['requirements']}"
-            
-            # Calculate matching scores
-            scores = calculate_matching_scores(resume_text, job_text)
-            
-            # Add job to recommendations if match score is above threshold
-            if scores['overall_match'] > 0.3:  # You can adjust this threshold
-                recommended_jobs.append({
-                    'id': str(job['_id']),
-                    'name': job['name'],
-                    'position': job['position'],
-                    'description': job['description'],
-                    'requirements': job['requirements'],
-                    'match_details': scores
-                })
-        
-        # Sort jobs by match score
-        recommended_jobs.sort(key=lambda x: x['match_details']['overall_match'], reverse=True)
-        
-        return jsonify({
-            'jobs': recommended_jobs
-        })
-
-    except Exception as e:
-        logger.error(f"Error generating job recommendations: {str(e)}")
-        return jsonify({'error': 'An error occurred while recommending jobs'}), 500
-
+# Add new functions after existing ones
 def process_application(resume_file, job_id, user_id):
     """Process and analyze a job application"""
     try:
@@ -581,20 +590,22 @@ def calculate_matching_scores(resume_text, job_text):
         
         return {
             'overall_match': normalized_score,
-            'semantic_match': cosine_sim,
-            'tfidf_similarity': cosine_sim,
+            'cosine_similarity': cosine_sim,
             'bm25_score': normalized_bm25,
-            'technical_match': technical_score
+            'technical_match': technical_score,
+            'soft_skills_match': soft_skills_score,
+            'experience_match': experience_score
         }
         
     except Exception as e:
         logger.error(f"Score calculation error: {str(e)}")
         return {
-            'overall_match': float('0.00'),
-            'technical_match': float('0.00'),
-            'semantic_match': float('0.00'),
-            'tfidf_similarity': float('0.00'),
-            'bm25_score': float('0.00')
+            'cosine_similarity': 0,
+            'bm25_score': 0,
+            'technical_match': 0,
+            'soft_skills_match': 0,
+            'experience_match': 0,
+            'overall_match': 0
         }
 
 def extract_technical_skills(text):
@@ -736,8 +747,7 @@ def get_job_applications(job_id):
                 "id": str(app["_id"]),
                 "user": {
                     "id": str(user_data["_id"]),
-                    "email": user_data["email"],
-                    "education_type": user_data.get("education_type", "technical")
+                    "email": user_data["email"]
                 },
                 "scores": app["scores"],
                 "status": app["status"],
@@ -936,6 +946,28 @@ def calculate_matching_scores(resume_text, job_description):
     except Exception as e:
         logger.error(f"Error in calculate_matching_scores: {str(e)}")
         raise e
+
+@app.route("/api/jobs/recommendations", methods=["POST", "OPTIONS"])
+@jwt_required()
+def job_recommendations():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    if 'resume' not in request.files:
+        return jsonify({'error': 'No resume file provided'}), 400
+
+    resume_file = request.files['resume']
+    if resume_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if not allowed_file(resume_file.filename):
+        return jsonify({'error': 'Invalid file type'}), 400
+
+    file_ext = resume_file.filename.rsplit('.', 1)[1].lower()
+    resume_text = extract_text_from_file(resume_file, file_ext)
+    recommended_jobs = recommend_jobs(resume_text)
+
+    return jsonify({'recommended_jobs': recommended_jobs})
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -26,8 +26,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { Authorization: `Bearer ${token}` }
       }).then(response => {
         setUser(response.data);
-      }).catch(() => {
-        localStorage.removeItem('token');
+      }).catch((error) => {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          setUser(null);
+        }
       });
     }
   }, []);
@@ -72,5 +75,9 @@ export const useAuth = () => {
 };
 
 export const getAuthToken = () => {
-  return localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  return token;
 };
