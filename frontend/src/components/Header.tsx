@@ -59,7 +59,7 @@ import React, { useState } from 'react';
                       <div className="relative">
                         <input
                           type="file"
-                          accept=".pdf"
+                          accept=".pdf,.docx"
                           onChange={(e) => handleResumeUpload(e.target.files ? e.target.files[0] : null)}
                           className="hidden"
                           id="resume-upload"

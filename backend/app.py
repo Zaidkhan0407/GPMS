@@ -25,6 +25,7 @@ from sklearn.preprocessing import MinMaxScaler
 import tempfile
 from io import BytesIO
 from docx import Document
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -35,7 +36,17 @@ app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 mongo = PyMongo(app)
 jwt = JWTManager(app)
-CORS(app)
+
+# Configure CORS with specific settings
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000", "http://localhost:5173"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Range", "X-Total-Count"],
+        "supports_credentials": True
+    }
+})
 
 # Initialize Hugging Face client
 huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
@@ -131,7 +142,7 @@ def recommend_jobs(resume_text):
         sorted_jobs = sorted(job_scores, key=lambda x: x['scores']['overall_match'], reverse=True)
         
         recommended_jobs = []
-        for job_score in sorted_jobs[:5]:
+        for job_score in sorted_jobs[:10]:
             if job_score['scores']['overall_match'] > 0:
                 job = job_score['job']
                 scores = job_score['scores']
@@ -145,6 +156,8 @@ def recommend_jobs(resume_text):
                     'location': job.get('location', 'Location not specified'),
                     'salary_min': float(job.get('salary_min', 0)),
                     'salary_max': float(job.get('salary_max', 0)),
+                    'hr_code': job.get('hr_code', ''),  # Add HR code
+                    'hr_email': job.get('hr_email', ''),  # Add HR email
                     'match_details': {
                         'overall_match': scores['overall_match'] / 100,
                         'technical_match': scores['technical_match'] / 100,
@@ -162,75 +175,35 @@ def recommend_jobs(resume_text):
         return []
 
 # Function to extract text from the uploaded PDF resume
-from docx import Document
-
-def extract_text_from_file(file, file_type):
-    """Extracts text from PDF or DOCX files with enhanced error handling and fallback methods."""
-    text = ""
-    try:
-        # Create a temporary file to store the content
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_type}') as temp_file:
-            file_content = file.read()
-            temp_file.write(file_content)
-            temp_file_path = temp_file.name
-        
-        if file_type == "pdf":
-            try:
-                # First attempt with PyPDF2
-                reader = PdfReader(temp_file_path)
-                for page in reader.pages:
-                    try:
-                        extracted = page.extract_text()
-                        if extracted:
-                            text += extracted + "\n"
-                    except Exception as page_error:
-                        logging.warning(f"Error extracting text from page: {str(page_error)}")
-                        continue
-                
-                # If PyPDF2 fails to extract text, try textract as fallback
-                if not text.strip():
-                    text = textract.process(temp_file_path, method='pdfminer').decode('utf-8')
-            except Exception as pdf_error:
-                logging.error(f"PDF extraction error: {str(pdf_error)}")
-                # Final fallback to textract
-                text = textract.process(temp_file_path, method='pdfminer').decode('utf-8')
-                
-        elif file_type == "docx":
-            try:
-                doc = Document(temp_file_path)
-                text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
-            except Exception as docx_error:
-                logging.error(f"DOCX extraction error: {str(docx_error)}")
-                # Fallback to textract for DOCX
-                text = textract.process(temp_file_path, extension='docx').decode('utf-8')
-        
-        # Clean up temporary file
-        try:
-            os.unlink(temp_file_path)
-        except Exception as cleanup_error:
-            logging.warning(f"Error cleaning up temporary file: {str(cleanup_error)}")
-            
-        return text
-        
-        text = text.strip()
-        if not text:
-            raise ValueError("No text could be extracted from the file after trying multiple methods")
-            
-        return text
-    except Exception as e:
-        logging.error(f"Error extracting text from {file_type} file: {str(e)}")
-        raise ValueError(f"Failed to extract text from {file_type} file after exhausting all extraction methods")
-
-# Function to generate interview questions based on resume content
 def generate_interview_questions(resume_text):
-    """Generates 5 relevant interview questions based on the content of the provided resume."""
-    prompt = f"""Based on the following resume, generate 5 relevant interview questions:
-
-{resume_text}
-
-Generate 5 interview questions that are specific to the candidate's experience, skills, and background. Each question should be on a new line and start with 'Q: '."""
-
+    """Generate interview questions based on resume content.
+    
+    Args:
+        resume_text (str): The extracted text from the resume
+        
+    Returns:
+        list: A list of generated interview questions
+    """
     try:
+        # Create a prompt for generating interview questions
+        prompt = f"""Based on the following resume content, generate 5 relevant interview questions. 
+        The questions should be a mix of technical and behavioral questions that are specifically tailored 
+        to the candidate's experience and skills. Make the questions challenging but fair.
+
+        Resume Content:
+        {resume_text}
+
+        Generate 5 interview questions that:
+        1. Test technical skills mentioned in the resume
+        2. Explore past projects and experiences
+        3. Assess problem-solving abilities
+        4. Evaluate teamwork and collaboration
+        5. Examine leadership and initiative
+
+        Format: Return only the questions as a numbered list.
+        """
+
+        # Generate questions using the Hugging Face model
         response = client.text_generation(
             prompt,
             model="meta-llama/Llama-3.2-3B-Instruct",
@@ -239,47 +212,242 @@ Generate 5 interview questions that are specific to the candidate's experience, 
             top_k=50,
             top_p=0.95,
         )
-        questions = re.findall(r'Q: (.+)', response)
+
+        # Process the response to extract questions
+        questions = [q.strip() for q in response.split('\n') if q.strip() and any(char.isdigit() for char in q)]
+        
+        # Ensure we have exactly 5 questions
+        questions = questions[:5] if len(questions) > 5 else questions
+        
         return questions
+
     except Exception as e:
         logger.error(f"Error generating interview questions: {str(e)}")
         return []
 
-# Routes
+def extract_text_from_file(file, file_type):
+    """Extract text from PDF or DOCX files with enhanced error handling and multiple fallback methods."""
+    text = ""
+    temp_file_path = None
+    start_time = time.time()
+    
+    try:
+        # Validate file size (max 50MB)
+        file.seek(0, 2)
+        file_size = file.tell()
+        if file_size > 50 * 1024 * 1024:
+            raise ValueError(f"File size ({file_size / 1024 / 1024:.1f}MB) exceeds maximum limit of 50MB")
+        file.seek(0)
+        
+        # Create secure temporary file with sanitized name
+        safe_filename = re.sub(r'[^a-zA-Z0-9.-]', '_', file.filename)
+        temp_filename = f'temp_{uuid.uuid4().hex}_{safe_filename}'
+        temp_file_path = os.path.join(tempfile.gettempdir(), temp_filename)
+        logger.info(f"Processing {file_type.upper()} file: {file.filename} ({file_size/1024:.1f}KB)")
+        logger.debug(f"Temporary file path: {temp_file_path}")
+
+        # Save file with chunk processing for large files
+        with open(temp_file_path, 'wb') as temp_file:
+            while chunk := file.read(8192):
+                temp_file.write(chunk)
+        
+        if file_type == "pdf":
+            text = ""
+            pdf_extraction_methods = [
+                ("PyPDF2", lambda: extract_with_pypdf2(temp_file_path)),
+                ("PDFMiner", lambda: extract_with_pdfminer(temp_file_path)),
+                ("Textract", lambda: extract_with_textract(temp_file_path))
+            ]
+            
+            extraction_results = []
+            for method_name, extract_method in pdf_extraction_methods:
+                try:
+                    method_start = time.time()
+                    method_text = extract_method()
+                    method_time = time.time() - method_start
+                    char_count = len(method_text.strip())
+                    extraction_results.append((method_name, char_count, method_text))
+                    logger.info(f"{method_name} extracted {char_count} chars in {method_time:.2f}s")
+                except Exception as method_error:
+                    logger.warning(f"{method_name} failed: {str(method_error)}")
+                    continue
+            
+            if extraction_results:
+                # Use the result with the most extracted text
+                best_result = max(extraction_results, key=lambda x: x[1])
+                text = best_result[2]
+                logger.info(f"Selected {best_result[0]} result with {best_result[1]} chars")
+            else:
+                raise ValueError("All PDF extraction methods failed")
+                
+        elif file_type == "docx":
+            extraction_methods = [
+                ("python-docx", lambda: extract_with_python_docx(temp_file_path)),
+                ("textract", lambda: textract.process(temp_file_path, extension='docx').decode('utf-8'))
+            ]
+            
+            for method_name, extract_method in extraction_methods:
+                try:
+                    method_start = time.time()
+                    text = extract_method()
+                    method_time = time.time() - method_start
+                    char_count = len(text.strip())
+                    logger.info(f"{method_name} extracted {char_count} chars in {method_time:.2f}s")
+                    if char_count > 0:
+                        break
+                except Exception as method_error:
+                    logger.warning(f"{method_name} failed: {str(method_error)}")
+                    continue
+        
+        # Post-process and validate extracted text
+        text = text.strip()
+        if not text:
+            raise ValueError(f"No text could be extracted from {file_type.upper()} file")
+        
+        # Remove excessive whitespace and normalize line endings
+        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'\n\s*\n+', '\n\n', text)
+        
+        total_time = time.time() - start_time
+        logger.info(f"Extraction completed: {len(text)} chars in {total_time:.2f}s")
+        return text
+        
+    except Exception as e:
+        logger.error(f"Extraction error for {file_type.upper()}: {str(e)}")
+        raise ValueError(f"Failed to extract text from {file_type.upper()} file: {str(e)}")
+    
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+                logger.debug(f"Cleaned up temporary file: {temp_file_path}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to clean up temporary file: {str(cleanup_error)}")
+
+def extract_with_python_docx(file_path):
+    """Extract text from DOCX using python-docx with enhanced paragraph handling."""
+    doc = Document(file_path)
+    text_parts = []
+    
+    for para in doc.paragraphs:
+        if para.text.strip():
+            # Preserve paragraph spacing
+            text_parts.append(para.text)
+    
+    # Add table content
+    for table in doc.tables:
+        for row in table.rows:
+            row_text = ' | '.join(cell.text.strip() for cell in row.cells if cell.text.strip())
+            if row_text:
+                text_parts.append(row_text)
+    
+    return '\n'.join(text_parts)
+
+def extract_with_pypdf2(file_path):
+    """Extract text from PDF using PyPDF2."""
+    text = ""
+    with open(file_path, 'rb') as pdf_file:
+        reader = PdfReader(pdf_file)
+        for page in reader.pages:
+            try:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+            except Exception as page_error:
+                logger.warning(f"Error extracting text from page with PyPDF2: {str(page_error)}")
+                continue
+    return text
+
+def extract_with_pdfminer(file_path):
+    """Extract text from PDF using pdfminer."""
+    from pdfminer.high_level import extract_text as pdfminer_extract
+    return pdfminer_extract(file_path)
+
+def extract_with_textract(file_path):
+    """Extract text from PDF using textract."""
+    return textract.process(file_path, method='pdfminer').decode('utf-8')
+
+def allowed_file(filename):
+    """Check if the file has an allowed extension (PDF or DOCX)."""
+    # Use regex to extract the file extension, handling underscores, spaces, and numbers
+    match = re.search(r'\.([a-zA-Z0-9]+)$', filename)
+    if not match:
+        return False
+    
+    # Get the file extension in lowercase
+    file_ext = match.group(1).lower()
+    
+    # Check if the extension is allowed
+    return file_ext in {'pdf', 'docx'}
+
+def extract_file_extension(filename):
+    """Extract the file extension from a filename, handling edge cases."""
+    # Use regex to extract the file extension, handling underscores, spaces, and numbers
+    match = re.search(r'\.([a-zA-Z0-9]+)$', filename)
+    if not match:
+        raise ValueError("No file extension found")
+    
+    # Return the file extension in lowercase
+    return match.group(1).lower()
+
 @app.route("/api/jobs/recommendations", methods=["POST", "OPTIONS"])
 @jwt_required()
 def get_job_recommendations():
     if request.method == "OPTIONS":
-        return jsonify({}), 200
-        
+        response = jsonify({})
+        return response, 200
+
     try:
+        # Validate request content type
+        if not request.content_type or 'multipart/form-data' not in request.content_type:
+            return jsonify({'error': 'Invalid content type. Must be multipart/form-data'}), 415
+
         if 'resume' not in request.files:
             return jsonify({'error': 'No resume file provided'}), 400
-            
+
         resume_file = request.files['resume']
         if resume_file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
-            
-        # Get file extension
-        file_extension = resume_file.filename.rsplit('.', 1)[1].lower()
-        if file_extension not in ['pdf', 'docx']:
+
+        # Validate file size (e.g., 10MB limit)
+        max_size = 10 * 1024 * 1024  # 10MB in bytes
+        resume_file.seek(0, 2)  # Seek to end of file
+        file_size = resume_file.tell()
+        resume_file.seek(0)  # Reset file pointer
+
+        if file_size > max_size:
+            return jsonify({'error': 'File size exceeds maximum limit of 10MB'}), 413
+
+        # Extract and validate file extension
+        try:
+            file_extension = extract_file_extension(resume_file.filename)
+        except ValueError as ve:
+            return jsonify({'error': str(ve)}), 400
+
+        if not allowed_file(resume_file.filename):
             return jsonify({'error': 'Invalid file format. Only PDF and DOCX files are allowed'}), 400
-            
-        # Extract text from resume
-        resume_text = extract_text_from_file(resume_file, file_extension)
-        if not resume_text:
-            return jsonify({'error': 'Could not extract text from resume'}), 400
-            
+
+        # Extract text from resume with enhanced error handling
+        try:
+            resume_text = extract_text_from_file(resume_file, file_extension)
+            if not resume_text:
+                return jsonify({'error': 'Could not extract text from resume'}), 400
+        except ValueError as ve:
+            return jsonify({'error': str(ve)}), 400
+        except Exception as e:
+            logger.error(f"Error extracting text from resume: {str(e)}")
+            return jsonify({'error': 'Failed to process resume file'}), 500
+
         # Get job recommendations
         recommended_jobs = recommend_jobs(resume_text)
         if not recommended_jobs:
-            return jsonify({'jobs': [], 'message': 'No matching jobs found'}), 200
-            
+            return jsonify({'message': 'No matching jobs found', 'jobs': []}), 200
+
         return jsonify({'jobs': recommended_jobs}), 200
-        
+
     except Exception as e:
         logger.error(f"Error in job recommendations: {str(e)}")
-        return jsonify({'error': 'An error occurred while processing your request'}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route("/api/signup", methods=["POST"])
 def signup():

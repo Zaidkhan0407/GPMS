@@ -27,7 +27,6 @@ const HRDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [companies, setCompanies] = useState<any[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
-  const [selectedResume, setSelectedResume] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompanies();
@@ -71,7 +70,12 @@ const HRDashboard: React.FC = () => {
   const handleUpdateStatus = async (applicationId: string, status: string) => {
     try {
       const token = getAuthToken();
-      await axios.patch(`http://localhost:5000/api/applications/${applicationId}/status`, {
+      if (!token) {
+        setError('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      const response = await axios.patch(`http://localhost:5000/api/applications/${applicationId}/status`, {
         status
       }, {
         headers: {
@@ -79,12 +83,38 @@ const HRDashboard: React.FC = () => {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      // Clear any existing error
+      setError(null);
+      // Refresh the applications list
       if (selectedCompany) {
-        fetchApplications(selectedCompany);
+        await fetchApplications(selectedCompany);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating application status:', error);
-      setError('Failed to update application status. Please try again.');
+      let errorMessage = 'Failed to update application status. Please try again.';
+      
+      if (error.response) {
+        // Handle specific error responses
+        switch (error.response.status) {
+          case 401:
+            errorMessage = 'Session expired. Please log in again.';
+            break;
+          case 403:
+            errorMessage = 'You do not have permission to update application status.';
+            break;
+          case 404:
+            errorMessage = 'Application not found.';
+            break;
+          default:
+            errorMessage = error.response.data?.message || errorMessage;
+        }
+      } else if (error.request) {
+        // Handle network errors
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -176,7 +206,7 @@ const HRDashboard: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Technical Candidates</h3>
                 <div className="space-y-4">
                   {applications
-                    .filter(app => (app.user as any).education_type === 'technical')
+                    .filter(app => app.scores && app.scores.overall_match)
                     .sort((a, b) => b.scores.overall_match - a.scores.overall_match)
                     .map((application) => (
                       <div key={application.id} className="bg-white rounded-lg shadow-sm p-6 transition-all duration-150 hover:shadow-md border border-gray-100">
@@ -209,6 +239,25 @@ const HRDashboard: React.FC = () => {
                               <p className="text-indigo-600 text-sm">Experience</p>
                             </div>
                           </div>
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                          {application.resume_url && (
+                            <button
+                              onClick={() => handleViewResume(application.resume_url!)}
+                              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                            >
+                              View Resume
+                            </button>
+                          )}
+                          <select
+                            value={application.status}
+                            onChange={(e) => handleUpdateStatus(application.id, e.target.value)}
+                            className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accept</option>
+                            <option value="rejected">Reject</option>
+                          </select>
                         </div>
                       </div>
                     ))}

@@ -361,6 +361,8 @@ const TPODashboard: React.FC = () => {
                       <p className="mt-1">{company.location}</p>
                       <p className="font-medium text-gray-700 mt-3">Salary Range:</p>
                       <p className="mt-1">${(company.salary_min || 0).toLocaleString()} - ${(company.salary_max || 0).toLocaleString()}</p>
+                      <p className="font-medium text-gray-700 mt-3">HR Code:</p>
+                      <p className="mt-1">{company.hr_code}</p>
                     </div>
                   </div>
                 ))}
