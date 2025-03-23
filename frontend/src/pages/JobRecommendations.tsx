@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { getAuthToken } from '../context/AuthContext';
+import Layout from '../components/Layout';
 
 interface JobRecommendationsProps {
   resume: File | null;
@@ -203,8 +204,8 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 animate-gradient-x">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Layout>
+      <div>
         <div className="text-center mb-12 animate-fade-in-down">
           <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300">Job Recommendations</h1>
           <p className="text-lg text-gray-600 font-medium">Discover your perfect career match with AI-powered recommendations</p>
@@ -393,7 +394,7 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 };
 

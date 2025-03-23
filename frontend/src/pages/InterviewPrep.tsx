@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { getAuthToken } from '../context/AuthContext';
+import Layout from '../components/Layout';
 
 interface InterviewPrepProps {
   resume: File | null;
@@ -89,8 +90,8 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 animate-gradient-x">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Layout>
+      <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12 animate-fade-in-down">
           <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300">Interview Preparation</h1>
           <p className="text-lg text-gray-600 font-medium">Practice and perfect your interview skills with AI-powered feedback</p>
@@ -196,7 +197,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 };
 
