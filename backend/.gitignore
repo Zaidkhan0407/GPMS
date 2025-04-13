@@ -1,7 +1,27 @@
+# Environment variables
 .env
+
+# Python
 __pycache__/
-*.pyc
-.env.local
-.env.development
-.env.test
-.env.production
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environment
+venv/
+env/
+.env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
