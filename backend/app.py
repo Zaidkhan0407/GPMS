@@ -608,6 +608,10 @@ def analyze_resume():
         else:
             return jsonify({'error': 'Invalid action'}), 400
 
+        if not huggingface_token:
+            logger.error("Hugging Face API token not found in environment variables")
+            return jsonify({'error': 'API configuration error. Please contact administrator.'}), 500
+
         try:
             response = client.text_generation(
                 prompt,
@@ -618,9 +622,13 @@ def analyze_resume():
                 top_p=0.95,
             )
             return jsonify({'result': response})
-        except Exception as e:
-            logger.error(f"Error calling Hugging Face API: {str(e)}")
-            return jsonify({'error': 'An error occurred during resume analysis'}), 500
+        except Exception as api_error:
+            if '401' in str(api_error):
+                logger.error(f"Hugging Face API authentication failed: {str(api_error)}")
+                return jsonify({'error': 'API authentication failed. Please verify API token.'}), 500
+            else:
+                logger.error(f"Error calling Hugging Face API: {str(api_error)}")
+                return jsonify({'error': 'An error occurred during resume analysis'}), 500
     else:
         return jsonify({'error': 'Invalid file type'}), 400
 
@@ -651,6 +659,10 @@ Please provide constructive feedback and suggestions for improvement. Focus on:
 
 Provide your feedback in a clear, concise manner with specific points for improvement."""
 
+    if not huggingface_token:
+        logger.error("Hugging Face API token not found in environment variables")
+        return jsonify({'error': 'API configuration error. Please contact administrator.'}), 500
+
     try:
         response = client.text_generation(
             prompt,
@@ -661,9 +673,13 @@ Provide your feedback in a clear, concise manner with specific points for improv
             top_p=0.95,
         )
         return jsonify({'result': response})
-    except Exception as e:
-        logger.error(f"Error calling Hugging Face API: {str(e)}")
-        return jsonify({'error': 'An error occurred during interview preparation'}), 500
+    except Exception as api_error:
+        if '401' in str(api_error):
+            logger.error(f"Hugging Face API authentication failed: {str(api_error)}")
+            return jsonify({'error': 'API authentication failed. Please verify API token.'}), 500
+        else:
+            logger.error(f"Error calling Hugging Face API: {str(api_error)}")
+            return jsonify({'error': 'An error occurred during interview preparation'}), 500
 
 def allowed_file(filename):
     """Check if the file has an allowed extension (PDF or DOCX)."""

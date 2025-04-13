@@ -7,16 +7,16 @@ interface ResumeAnalysisProps {
   selectedModules: string[];
 }
 
-const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume, selectedModules }) => {
+const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume }) => {
   const [analysis, setAnalysis] = useState<string | null>(null);
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (resume && selectedModules.includes("Resume Analysis")) {
+    if (resume) {
       handleSubmit();
     }
-  }, [resume, selectedModules]);
+  }, [resume]);
 
   const handleSubmit = async () => {
     if (!resume) {
@@ -40,7 +40,12 @@ const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume, selectedModules
           'Authorization': `Bearer ${token}`
         }
       });
-      setAnalysis(response.data.result);
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+      const result = response.data.result || response.data;
+      const cleanResult = typeof result === 'string' ? result.replace(/\*\*/g, '') : JSON.stringify(result, null, 2);
+      setAnalysis(cleanResult);
     } catch (error) {
       console.error('Error analyzing resume:', error);
       setError('An error occurred while analyzing the resume. Please try again.');
@@ -50,16 +55,24 @@ const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume, selectedModules
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 animate-gradient-x">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-black via-deep-purple-900 to-black py-12 animate-gradient-x">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 animate-fade-in-down">
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300">Resume Analysis</h1>
-          <p className="text-lg text-gray-600 font-medium">Get detailed insights and improvements for your resume</p>
+          <h1 className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-300 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300 font-['Playfair_Display']">
+            Resume Analysis
+          </h1>
+          <p className="text-xl text-purple-300 font-medium tracking-wide">Get detailed insights and improvements for your resume</p>
         </div>
     
+        {loading && (
+          <div className="flex justify-center items-center my-8">
+            <div className="w-12 h-12 border-4 border-purple-300 border-t-purple-100 rounded-full animate-spin shadow-lg"></div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-8 transform hover:scale-102 transition-all duration-300 animate-fade-in">
-            <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-5 backdrop-blur-xl shadow-lg hover:shadow-red-500/20">
+            <div className="bg-deep-purple-900/50 backdrop-blur-xl border-l-4 border-red-400 rounded-lg p-5 shadow-lg hover:shadow-purple-500/20">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -67,7 +80,7 @@ const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume, selectedModules
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600 font-medium">{error}</p>
+                  <p className="text-sm text-red-400 font-medium">{error}</p>
                 </div>
               </div>
             </div>
@@ -76,17 +89,29 @@ const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume, selectedModules
     
         {analysis && (
           <div className="transform hover:scale-102 transition-all duration-300 animate-fade-in-up">
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-colors duration-300">
-              <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900 mb-1 filter drop-shadow-lg">Analysis Results</h2>
-                <p className="text-sm text-gray-600">Detailed feedback and suggestions for your resume</p>
+            <div className="bg-deep-purple-900/30 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
+              <div className="px-6 py-4 bg-gradient-to-r from-deep-purple-900/60 via-deep-purple-800/60 to-deep-purple-700/60 border-b border-purple-600/40">
+                <h2 className="text-2xl font-bold text-purple-300 mb-1 filter drop-shadow-lg">Analysis Results</h2>
+                <p className="text-sm text-purple-400">Detailed feedback and suggestions for your resume</p>
               </div>
-              <div className="px-8 py-6 hover:bg-gray-50 transition-colors duration-300">
-                <div className="prose prose-invert max-w-none">
-                  <pre className="whitespace-pre-wrap text-gray-700 bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors duration-300">{analysis}</pre>
+              <div className="px-6 py-4 hover:bg-deep-purple-800/30 transition-colors duration-300">
+                <div className="max-w-none">
+                  <div className="whitespace-pre-wrap text-purple-200 bg-deep-purple-900/40 rounded-lg p-4 border border-purple-600/40 font-['Playfair_Display',_'Merriweather',_serif] text-lg tracking-wide leading-relaxed shadow-inner">{analysis}</div>
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {!analysis && !error && !loading && (
+          <div className="flex justify-center animate-fade-in-up">
+            <button 
+              onClick={handleSubmit}
+              disabled={!resume}
+              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-300 border border-transparent hover:border-purple-400"
+            >
+              Analyze Resume
+            </button>
           </div>
         )}
       </div>
@@ -95,4 +120,3 @@ const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume, selectedModules
 };
 
 export default ResumeAnalysis;
-

@@ -7,7 +7,7 @@ interface InterviewPrepProps {
   selectedModules: string[];
 }
 
-const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }) => {
+const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume }) => {
   const [questions, setQuestions] = useState<string[]>([]);
   const [selectedQuestion, setSelectedQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -16,10 +16,10 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (resume && selectedModules.includes("Interview Prep")) {
+    if (resume) {
       handleExtractQuestions();
     }
-  }, [resume, selectedModules]);
+  }, [resume]);
 
   const handleExtractQuestions = async () => {
     if (!resume) {
@@ -89,16 +89,16 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 animate-gradient-x">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-black via-deep-purple-900 to-black py-12 animate-gradient-x">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 animate-fade-in-down">
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300">Interview Preparation</h1>
-          <p className="text-lg text-gray-600 font-medium">Practice and perfect your interview skills with AI-powered feedback</p>
+          <h1 className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-300 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300 font-['Playfair_Display']">Interview Preparation</h1>
+          <p className="text-xl text-purple-300 font-medium tracking-wide">Practice and perfect your interview skills with AI-powered feedback</p>
         </div>
 
         {error && (
           <div className="mb-8 transform hover:scale-102 transition-all duration-300 animate-fade-in">
-            <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-5 backdrop-blur-xl shadow-lg hover:shadow-red-500/20">
+            <div className="bg-deep-purple-900/50 backdrop-blur-xl border-l-4 border-red-400 rounded-lg p-5 shadow-lg hover:shadow-purple-500/20">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -106,7 +106,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600 font-medium">{error}</p>
+                  <p className="text-sm text-red-400 font-medium">{error}</p>
                 </div>
               </div>
             </div>
@@ -115,23 +115,23 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
 
         {questions.length > 0 && (
           <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in-up">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 hover:border-gray-200 transition-all duration-300 overflow-hidden">
-              <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
-                <label htmlFor="question" className="block text-xl font-semibold text-gray-900 mb-2 filter drop-shadow-lg">
+            <div className="bg-deep-purple-900/30 backdrop-blur-xl rounded-2xl shadow-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 overflow-hidden">
+              <div className="px-8 py-6 bg-gradient-to-r from-deep-purple-900/60 via-deep-purple-800/60 to-deep-purple-700/60 border-b border-purple-500/30">
+                <label htmlFor="question" className="block text-xl font-semibold text-purple-300 mb-2 filter drop-shadow-lg">
                   Select Interview Question
                 </label>
-                <p className="text-sm text-gray-600">Choose a question to practice your response</p>
+                <p className="text-sm text-purple-400">Choose a question to practice your response</p>
               </div>
-              <div className="px-8 py-6 hover:bg-gray-50 transition-colors duration-300">
+              <div className="px-8 py-6 hover:bg-deep-purple-800/30 transition-colors duration-300">
                 <select
                   id="question"
                   value={selectedQuestion}
                   onChange={(e) => setSelectedQuestion(e.target.value)}
-                  className="w-full rounded-lg border-gray-200 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
+                  className="w-full rounded-lg bg-deep-purple-800/50 border-purple-600 text-purple-200 placeholder-purple-400 shadow-sm focus:border-purple-400 focus:ring focus:ring-purple-400/50 transition-all duration-200"
                 >
-                  <option value="">Select a question</option>
+                  <option value="" className="bg-purple-900">Select a question</option>
                   {questions.map((q, index) => (
-                    <option key={index} value={q} className="py-2 text-gray-900">
+                    <option key={index} value={q} className="py-2 text-purple-100 bg-purple-900">
                       {q}
                     </option>
                   ))}
@@ -139,19 +139,19 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
               </div>
             </div>
   
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 hover:border-gray-200 transition-all duration-300 overflow-hidden">
-              <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
-                <label htmlFor="answer" className="block text-xl font-semibold text-gray-900 mb-2 filter drop-shadow-lg">
+            <div className="bg-deep-purple-900/30 backdrop-blur-xl rounded-2xl shadow-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 overflow-hidden">
+              <div className="px-8 py-6 bg-gradient-to-r from-deep-purple-900/60 via-deep-purple-800/60 to-deep-purple-700/60 border-b border-purple-500/30">
+                <label htmlFor="answer" className="block text-xl font-semibold text-purple-300 mb-2 filter drop-shadow-lg">
                   Your Answer
                 </label>
-                <p className="text-sm text-gray-600">Provide your response to the selected question</p>
+                <p className="text-sm text-purple-400">Provide your response to the selected question</p>
               </div>
-              <div className="px-8 py-6 hover:bg-gray-50 transition-colors duration-300">
+              <div className="px-8 py-6 hover:bg-deep-purple-800/30 transition-colors duration-300">
                 <textarea
                   id="answer"
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
-                  className="w-full rounded-lg border-gray-200 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-200"
+                  className="w-full rounded-lg bg-deep-purple-800/50 border-purple-600 text-purple-200 placeholder-purple-400 shadow-sm focus:border-purple-400 focus:ring focus:ring-purple-400/50 transition-all duration-200"
                   rows={5}
                   placeholder="Enter your answer to the question"
                 />
@@ -162,7 +162,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
               <button
                 type="submit"
                 disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-300 border border-transparent hover:border-blue-700"
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-300 border border-transparent hover:border-purple-400"
               >
                 {loading ? (
                   <span className="flex items-center">
@@ -182,14 +182,14 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume, selectedModules }
   
         {feedback && (
           <div className="mt-12 transform hover:scale-102 transition-all duration-300 animate-fade-in-up">
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:border-gray-200 transition-colors duration-300">
-              <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900 mb-1 filter drop-shadow-lg">AI Feedback</h2>
-                <p className="text-sm text-gray-600">Analysis of your interview response</p>
+            <div className="bg-deep-purple-900/30 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
+              <div className="px-8 py-6 bg-gradient-to-r from-deep-purple-900/60 via-deep-purple-800/60 to-deep-purple-700/60 border-b border-purple-500/30">
+                <h2 className="text-2xl font-bold text-purple-300 mb-1 filter drop-shadow-lg">AI Feedback</h2>
+                <p className="text-sm text-purple-400">Analysis of your interview response</p>
               </div>
-              <div className="px-8 py-6 hover:bg-gray-50 transition-colors duration-300">
+              <div className="px-8 py-6 hover:bg-deep-purple-800/30 transition-colors duration-300">
                 <div className="prose max-w-none">
-                  <pre className="whitespace-pre-wrap text-gray-700 bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors duration-300">{feedback}</pre>
+                  <pre className="whitespace-pre-wrap text-purple-200 bg-deep-purple-900/30 rounded-lg p-4 border border-purple-600/30 hover:border-purple-500/50 transition-colors duration-300">{feedback}</pre>
                 </div>
               </div>
             </div>
