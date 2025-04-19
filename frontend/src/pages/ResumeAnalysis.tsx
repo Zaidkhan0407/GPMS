@@ -43,9 +43,8 @@ const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume }) => {
       if (response.data.error) {
         throw new Error(response.data.error);
       }
-      const result = response.data.result || response.data;
-      const cleanResult = typeof result === 'string' ? result.replace(/\*\*/g, '') : JSON.stringify(result, null, 2);
-      setAnalysis(cleanResult);
+      const improvements = response.data.improvements || [];
+      setAnalysis(improvements);
     } catch (error) {
       console.error('Error analyzing resume:', error);
       setError('An error occurred while analyzing the resume. Please try again.');
@@ -96,8 +95,15 @@ const ResumeAnalysis: React.FC<ResumeAnalysisProps> = ({ resume }) => {
               </div>
               <div className="px-6 py-4 hover:bg-deep-purple-800/30 transition-colors duration-300">
                 <div className="max-w-none">
-                  <div className="whitespace-pre-wrap text-purple-200 bg-deep-purple-900/40 rounded-lg p-4 border border-purple-600/40 font-['Playfair_Display',_'Merriweather',_serif] text-lg tracking-wide leading-relaxed shadow-inner">{analysis}</div>
+                <div className="text-purple-200 bg-deep-purple-900/40 rounded-lg p-6 border border-purple-600/40 font-['Playfair_Display',_'Merriweather',_serif] text-lg tracking-wide leading-relaxed shadow-inner space-y-4">
+                  {Array.isArray(analysis) ? analysis.map((improvement, index) => (
+                    <div key={index} className="flex items-start space-x-3 hover:bg-deep-purple-800/30 p-3 rounded-lg transition-all duration-300">
+                      <span className="flex-shrink-0 w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center border border-purple-500/30 text-purple-300">{index + 1}</span>
+                      <p className="text-purple-200 pt-1">{improvement}</p>
+                    </div>
+                  )) : null}
                 </div>
+              </div>
               </div>
             </div>
           </div>

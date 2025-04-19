@@ -68,9 +68,10 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume }) => {
       const response = await axios.post(
         'http://localhost:5000/api/interview-prep',
         {
-          resume_text: resume ? 'test' : null,
+          resume_text: resume ? await resume.text() : null,
           question: selectedQuestion,
-          answer: answer
+          answer: answer,
+          word_limit: 1000
         },
         {
           headers: {
@@ -79,7 +80,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ resume }) => {
           }
         }
       );
-      setFeedback(response.data.result);
+      setFeedback(String(response.data.result));
     } catch (error) {
       console.error('Error during interview preparation:', error);
       setError('An error occurred during interview preparation. Please try again.');
