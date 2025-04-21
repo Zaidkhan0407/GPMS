@@ -472,5 +472,36 @@ def update_application_status(application_id):
     )
     return jsonify({"message": "Status updated" if result.matched_count else "Application not found"}), 200 if result.matched_count else 404
 
+@app.route("/api/applications/rejected", methods=["DELETE"])
+@jwt_required()
+def delete_rejected_applications():
+    try:
+        # Get the HR user's identity
+        current_user_id = get_jwt_identity()
+        current_user = mongo.db.users.find_one({"_id": ObjectId(current_user_id)})
+        
+        if not current_user or current_user.get("role") != "hr":
+            return jsonify({"error": "Unauthorized access"}), 403
+            
+        # Get the HR's company code
+        hr_code = current_user.get("hr_code")
+        if not hr_code:
+            return jsonify({"error": "HR code not found"}), 400
+            
+        # Find and delete all rejected applications for jobs under this HR
+        company = mongo.db.companies.find_one({"hr_code": hr_code})
+        if not company:
+            return jsonify({"error": "Company not found"}), 404
+            
+        result = mongo.db.applications.delete_many({
+            "job_id": ObjectId(str(company["_id"])),
+            "status": "rejected"
+        })
+        
+        return jsonify({"message": f"Successfully deleted {result.deleted_count} rejected applications"}), 200
+    except Exception as e:
+        logger.error(f"Error deleting rejected applications: {str(e)}")
+        return jsonify({"error": "An error occurred while deleting rejected applications"}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)
