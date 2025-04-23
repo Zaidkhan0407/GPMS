@@ -203,56 +203,57 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
   };
   console.log("Recommended Jobs:", recommendedJobs);
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-deep-purple-900 to-black py-12 animate-gradient-x">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-12 relative bg-gradient-to-br from-sky-200 via-sky-300 to-sky-500 bg-fixed">
+      <div className="absolute inset-0 bg-white/30 backdrop-blur-sm z-0"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-12 animate-fade-in-down">
-          <h1 className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-300 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300 font-['Playfair_Display']">Job Recommendations</h1>
-          <p className="text-xl text-purple-300 font-medium tracking-wide">Discover your perfect career match with AI-powered recommendations</p>
+          <h2 className="text-2xl font-bold text-indigo-700 mb-1 filter drop-shadow-lg">Job Recommendations</h2>
+          <p className="text-sm text-indigo-600">Personalized job matches based on your resume</p>
         </div>
 
-        <div className="bg-deep-purple-900/30 backdrop-blur-xl rounded-xl shadow-md p-6 mb-8 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
+        <div className="bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 mb-8 border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-purple-300 mb-2">Minimum Salary (₹)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Salary (₹)</label>
               <input
                 type="number"
                 name="salaryMin"
                 value={filters.salaryMin}
                 onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-deep-purple-800/50 border-purple-600 text-purple-200 placeholder-purple-400 shadow-sm focus:border-purple-400 focus:ring focus:ring-purple-400/50 sm:text-sm"
+                className="w-full rounded-lg bg-white/50 border-indigo-300 text-indigo-700 placeholder-indigo-400 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500/50 transition-all duration-200"
                 placeholder="Enter minimum salary"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-purple-300 mb-2">Maximum Salary (₹)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Maximum Salary (₹)</label>
               <input
                 type="number"
                 name="salaryMax"
                 value={filters.salaryMax}
                 onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-deep-purple-800/50 border-purple-600 text-purple-200 placeholder-purple-400 shadow-sm focus:border-purple-400 focus:ring focus:ring-purple-400/50 sm:text-sm"
+                className="w-full rounded-lg bg-white/50 border-indigo-300 text-indigo-700 placeholder-indigo-400 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500/50 transition-all duration-200"
                 placeholder="Enter maximum salary"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-purple-300 mb-2">Location</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
               <input
                 type="text"
                 name="location"
                 value={filters.location}
                 onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-deep-purple-800/50 border-purple-600 text-purple-200 placeholder-purple-400 shadow-sm focus:border-purple-400 focus:ring focus:ring-purple-400/50 sm:text-sm"
+                className="w-full rounded-lg bg-white/50 border-indigo-300 text-indigo-700 placeholder-indigo-400 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500/50 transition-all duration-200"
                 placeholder="Enter location"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-purple-300 mb-2">Technology</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Technology</label>
               <input
                 type="text"
                 name="technology"
                 value={filters.technology}
                 onChange={handleFilterChange}
-                className="mt-1 block w-full rounded-md bg-deep-purple-800/50 border-purple-600 text-purple-200 placeholder-purple-400 shadow-sm focus:border-purple-400 focus:ring focus:ring-purple-400/50 sm:text-sm"
+                className="w-full rounded-lg bg-white/50 border-indigo-300 text-indigo-700 placeholder-indigo-400 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500/50 transition-all duration-200"
                 placeholder="Enter technology"
               />
             </div>
@@ -261,15 +262,15 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
 
         {error && (
           <div className="mb-8 transform hover:scale-102 transition-all duration-300 animate-fade-in">
-            <div className="bg-deep-purple-900/50 backdrop-blur-xl border-l-4 border-red-400 rounded-lg p-5 shadow-lg hover:shadow-purple-500/20">
+            <div className="bg-white/70 backdrop-blur-xl border-l-4 border-red-400 rounded-lg p-5 shadow-lg hover:shadow-indigo-200/30">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-400 font-medium">{error}</p>
+                  <p className="text-sm text-red-600 font-medium">{error}</p>
                 </div>
               </div>
             </div>
@@ -278,32 +279,32 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
 
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-300 border-t-purple-100"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-indigo-200"></div>
           </div>
         )}
 
         {!loading && !error && recommendedJobs.length === 0 && (
-          <div className="bg-deep-purple-900/30 backdrop-blur-xl rounded-2xl shadow-lg px-8 py-6 mb-6 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl px-8 py-6 mb-6 border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300">
             <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mx-auto h-12 w-12 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
-              <h3 className="mt-2 text-lg font-medium text-purple-300">No Recommendations</h3>
-              <p className="mt-1 text-sm text-purple-400">Please ensure you have uploaded a resume and selected "Job Recommendations" from the modules.</p>
+              <h3 className="mt-2 text-lg font-medium text-gray-700">No Recommendations</h3>
+              <p className="mt-1 text-sm text-gray-600">Please ensure you have uploaded a resume and selected "Job Recommendations" from the modules.</p>
             </div>
           </div>
         )}
 
         {recommendedJobs.length > 0 && (
           <div className="space-y-6 animate-fade-in-up">
-            {filteredJobs.map((job) => (
-              <div key={job.id} className="bg-gradient-to-br from-deep-purple-900/20 via-purple-900/15 to-deep-purple-900/20 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden border border-purple-500/20 hover:border-purple-400/30 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/10 transform hover:-translate-y-1">
-                <div className="px-8 py-6 bg-gradient-to-r from-deep-purple-900/60 via-deep-purple-800/60 to-deep-purple-700/60 border-b border-purple-500/30">
+            {filteredJobs.map((job, index) => (
+              <div key={job.id} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 transform hover:-translate-y-1">
+                <div className="px-8 py-6 bg-gradient-to-r from-indigo-600/20 via-indigo-500/20 to-indigo-400/20 border-b border-indigo-200/30">
                   <div className="flex justify-between items-start">
                     <div className="flex-grow">
-                      <h3 className="text-2xl font-bold text-purple-300">{job.name}</h3>
-                      <p className="mt-1 text-lg text-purple-200">{job.position}</p>
-                      <div className="mt-2 flex items-center space-x-4 text-sm text-purple-400">
+                      <h3 className="text-2xl font-bold text-indigo-700">{job.name}</h3>
+                      <p className="mt-1 text-lg text-indigo-600">{job.position}</p>
+                      <div className="mt-2 flex items-center space-x-4 text-sm text-indigo-500">
                         <div className="flex items-center">
                           <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -313,49 +314,49 @@ const JobRecommendations: React.FC<JobRecommendationsProps> = ({ resume, selecte
                         <div className="ml-4">₹{job.salary_min === job.salary_max ? (job.salary_min?.toLocaleString() || 0) : `${job.salary_min?.toLocaleString() || 0} - ₹${job.salary_max?.toLocaleString() || 0}`}</div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-center bg-gradient-to-br from-deep-purple-900/50 via-deep-purple-800/50 to-deep-purple-700/50 rounded-lg p-4 shadow-sm border border-purple-500/30">
-                      <p className="text-3xl font-bold text-purple-300">{((job.match_details?.overall_match ?? 0)*100).toFixed(1)}%</p>
-                      <p className="text-sm text-purple-400">Match Score</p>
+                    <div className="flex flex-col items-center bg-indigo-50/80 rounded-lg p-4 shadow-sm border border-indigo-200/50">
+                      <p className="text-3xl font-bold text-indigo-600">{((job.match_details?.overall_match ?? 0)*100).toFixed(1)}%</p>
+                      <p className="text-sm text-indigo-500">Match Score</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="px-8 py-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-gradient-to-br from-deep-purple-900/50 via-deep-purple-800/50 to-deep-purple-700/50 rounded-xl p-4 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 flex flex-col items-center">
-                      <p className="text-xl font-bold text-purple-300">{((job.match_details?.technical_match ?? 0) * 100).toFixed(1)}%</p>
-                      <p className="text-sm text-purple-400 text-center">Technical Match</p>
+                    <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300 flex flex-col items-center">
+                      <p className="text-xl font-bold text-indigo-600">{((job.match_details?.technical_match ?? 0) * 100).toFixed(1)}%</p>
+                      <p className="text-sm text-indigo-500 text-center">Technical Match</p>
                     </div>
-                    <div className="bg-gradient-to-br from-deep-purple-900/50 via-deep-purple-800/50 to-deep-purple-700/50 rounded-xl p-4 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
-                      <p className="text-xl font-bold text-purple-300">{((job.match_details?.semantic_match ?? 0) * 100).toFixed(1)}%</p>
-                      <p className="text-sm text-purple-400">Semantic Match</p>
+                    <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300">
+                      <p className="text-xl font-bold text-indigo-600">{((job.match_details?.semantic_match ?? 0) * 100).toFixed(1)}%</p>
+                      <p className="text-sm text-indigo-500">Semantic Match</p>
                     </div>
-                    <div className="bg-gradient-to-br from-deep-purple-900/50 via-deep-purple-800/50 to-deep-purple-700/50 rounded-xl p-4 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
-                      <p className="text-xl font-bold text-purple-300">{((job.match_details?.tfidf_similarity ?? 0) * 100).toFixed(1)}%</p>
-                      <p className="text-sm text-purple-400">TF-IDF Score</p>
+                    <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300">
+                      <p className="text-xl font-bold text-indigo-600">{((job.match_details?.tfidf_similarity ?? 0) * 100).toFixed(1)}%</p>
+                      <p className="text-sm text-indigo-500">TF-IDF Score</p>
                     </div>
-                    <div className="bg-gradient-to-br from-deep-purple-900/50 via-deep-purple-800/50 to-deep-purple-700/50 rounded-xl p-4 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
-                      <p className="text-xl font-bold text-purple-300">{((job.match_details?.bm25_score ?? 0) * 100).toFixed(1)}%</p>
-                      <p className="text-sm text-purple-400">BM25 Score</p>
+                    <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300">
+                      <p className="text-xl font-bold text-indigo-600">{((job.match_details?.bm25_score ?? 0) * 100).toFixed(1)}%</p>
+                      <p className="text-sm text-indigo-500">BM25 Score</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-deep-purple-900/50 via-deep-purple-800/50 to-deep-purple-700/50 rounded-xl p-6 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
-                      <h4 className="text-lg font-semibold text-purple-300 mb-2">Description</h4>
-                      <p className="text-purple-400">{job.description}</p>
+                  <div className="text-indigo-800 bg-white/50 rounded-lg p-6 border border-indigo-200/40 font-['Playfair_Display',_'Merriweather',_serif] text-lg tracking-wide leading-relaxed shadow-inner space-y-4">
+                    <div className="flex items-start space-x-3 hover:bg-indigo-100/30 p-3 rounded-lg transition-all duration-300">
+                      <span className="flex-shrink-0 w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center border border-indigo-300/30 text-indigo-600">{index + 1}</span>
+                      <p className="text-indigo-700 pt-1">{job.description}</p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-deep-purple-900/50 via-deep-purple-800/50 to-deep-purple-700/50 rounded-xl p-6 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
-                      <h4 className="text-lg font-semibold text-purple-300 mb-2">Requirements</h4>
-                      <p className="text-purple-400">{job.requirements}</p>
+                    <div className="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-indigo-200/50 hover:border-indigo-300/50 transition-all duration-300">
+                      <h4 className="text-lg font-semibold text-indigo-700 mb-2">Requirements</h4>
+                      <p className="text-gray-600">{job.requirements}</p>
                     </div>
 
                     <div className="flex justify-end">
                       <button
                         onClick={() => handleApply(job.id)}
                         disabled={applying === job.id}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-300 border border-transparent hover:border-purple-400"
+                        className="px-8 py-3 bg-indigo-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-300 border border-transparent hover:border-indigo-400 hover:bg-indigo-600"
                       >
                         {applying === job.id ? (
                           <span className="flex items-center">

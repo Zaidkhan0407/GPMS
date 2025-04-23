@@ -176,24 +176,34 @@ const TPODashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-950 to-purple-900 py-12 animate-gradient-x">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-12 relative bg-gradient-to-br from-sky-200 via-sky-300 to-sky-500 bg-fixed">
+      <div className="absolute inset-0 bg-white/30 backdrop-blur-sm z-0"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-12 animate-fade-in-down">
-          <h1 className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-50 via-fuchsia-100 to-purple-200 mb-4 filter drop-shadow-lg hover:scale-105 transition-all duration-300 font-['Playfair_Display']">TPO Dashboard</h1>
-          <p className="text-xl text-fuchsia-100 font-medium tracking-wide">Manage job listings and company profiles</p>
+          <h1 className="text-6xl font-extrabold text-teal-600 mb-4 filter drop-shadow-2xl hover:scale-105 transition-all duration-300 font-['Playfair_Display']">TPO Dashboard</h1>
+          <p className="text-xl text-teal-700 font-medium tracking-wide drop-shadow-md">Manage job listings and company profiles</p>
         </div>
         {loading ? (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-8">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="bg-white/70 backdrop-blur-xl border-l-4 border-red-400 rounded-lg p-5 shadow-lg hover:shadow-teal-200/30 mb-8">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-600 font-medium">{error}</p>
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            <div className="bg-purple-900/30 backdrop-blur-xl rounded-xl shadow-xl p-6 mb-8 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300">
-              <h2 className="text-2xl font-bold text-fuchsia-200 mb-6 filter drop-shadow-lg">{editingCompany ? 'Edit Job Listing' : 'Add New Company'}</h2>
+            <div className="bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 mb-8 border border-teal-200/50 hover:border-teal-300/50 transition-all duration-300">
+              <h2 className="text-2xl font-bold text-teal-700 mb-6 filter drop-shadow-lg">{editingCompany ? 'Edit Job Listing' : 'Add New Company'}</h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>

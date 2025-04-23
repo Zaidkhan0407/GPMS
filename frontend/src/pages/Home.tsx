@@ -1,25 +1,38 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Users, Briefcase } from 'lucide-react';
+import { FileText, Users, Briefcase, LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
+// Define the type for the useAuth hook's return value
+interface AuthContextType {
+  user: any; // Replace 'any' with a specific user type if available
+}
+
+// Define the type for each card item
+interface CardItem {
+  to: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  color: string;
+  hoverColor: string;
+}
+
 const Home: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuth() as AuthContextType;
+
   const cardVariants = {
     initial: { opacity: 0, y: 20, scale: 0.95 },
     animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
-    hover: { scale: 1.05, y: -5, transition: { duration: 0.3, ease: "easeInOut" } }
+    hover: { scale: 1.05, y: -5, rotate: 1, transition: { type: "spring", stiffness: 300 } }
   };
 
   const containerVariants = {
     initial: { opacity: 0 },
     animate: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3
-      }
+      transition: { staggerChildren: 0.2, delayChildren: 0.3 }
     }
   };
 
@@ -27,9 +40,20 @@ const Home: React.FC = () => {
     initial: { opacity: 0, y: -50 },
     animate: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
   };
+
+  const cardItems: CardItem[] = [
+    { to: "/resume-analysis", icon: FileText, title: "Resume Analysis", description: "Get AI-powered insights for your resume", color: "text-coral-500", hoverColor: "text-coral-600" },
+    { to: "/interview-prep", icon: Users, title: "Interview Preparation", description: "Practice with AI-generated interview questions", color: "text-sky-500", hoverColor: "text-sky-600" },
+    { to: "/job-recommendations", icon: Briefcase, title: "Job Recommendations", description: "Discover matched job opportunities", color: "text-lime-500", hoverColor: "text-lime-600" }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-deep-purple-900 to-black py-12 animate-gradient-x">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div
+      className="min-h-screen py-12 relative bg-gradient-to-br from-sky-200 via-sky-300 to-sky-500 bg-fixed overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-white/30 backdrop-blur-sm z-0"></div>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -40,7 +64,7 @@ const Home: React.FC = () => {
             variants={titleVariants}
             initial="initial"
             animate="animate"
-            className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-300 mb-6 filter drop-shadow-lg hover:scale-105 transition-all duration-300 font-['Playfair_Display']"
+            className="text-6xl font-extrabold text-indigo-600 mb-6 filter drop-shadow-2xl hover:scale-105 transition-all duration-300 font-['Playfair_Display']"
           >
             AI Placement Management System
           </motion.h1>
@@ -48,7 +72,7 @@ const Home: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="text-xl text-purple-300 font-medium tracking-wide"
+            className="text-xl text-indigo-700 font-medium tracking-wide drop-shadow-md"
           >
             Elevate your career journey with our advanced AI-powered tools
           </motion.p>
@@ -60,11 +84,7 @@ const Home: React.FC = () => {
           animate="animate"
           className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4"
         >
-          {[
-            { to: "/resume-analysis", icon: FileText, title: "Resume Analysis", description: "Get AI-powered insights for your resume", gradient: "from-deep-purple-900 to-deep-purple-700" },
-            { to: "/interview-prep", icon: Users, title: "Interview Preparation", description: "Practice with AI-generated interview questions", gradient: "from-deep-purple-800 to-deep-purple-600" },
-            { to: "/job-recommendations", icon: Briefcase, title: "Job Recommendations", description: "Discover matched job opportunities", gradient: "from-deep-purple-700 to-deep-purple-500" }
-          ].map((item, index) => (
+          {cardItems.map((item, index) => (
             <motion.div
               key={index}
               variants={cardVariants}
@@ -73,20 +93,32 @@ const Home: React.FC = () => {
             >
               <Link
                 to={user ? item.to : "/login"}
-                className="block bg-deep-purple-900/30 backdrop-blur-xl shadow-xl border border-purple-500/30 rounded-2xl overflow-hidden hover:border-purple-400/50 hover:shadow-purple-500/20 transition-all duration-300 h-full"
+                className="block bg-white shadow-2xl border border-gray-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-indigo-200/50 transition-all duration-300 h-full"
               >
-                <div className={`p-8 relative overflow-hidden group`}>
-                  <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}></div>
-
+                <div className="p-8 relative group">
                   <div className="relative z-10">
-                    <item.icon size={56} className="mx-auto mb-6 text-purple-400 group-hover:scale-110 transition-transform duration-300" />
-                    <h2 className="text-2xl font-bold mb-4 text-purple-300 filter drop-shadow-lg font-['Playfair_Display']">{item.title}</h2>
-                    <p className="text-purple-200 leading-relaxed group-hover:text-purple-100 transition-colors duration-300">{item.description}</p>
+                    <item.icon size={56} className={`mx-auto mb-6 ${item.color} group-hover:${item.hoverColor} group-hover:scale-110 transition-transform duration-300`} />
+                    <h2 className="text-2xl font-bold mb-4 text-black filter drop-shadow-lg font-['Playfair_Display']">{item.title}</h2>
+                    <p className="text-gray-600 leading-relaxed group-hover:text-gray-800 transition-colors duration-300">{item.description}</p>
                   </div>
                 </div>
               </Link>
             </motion.div>
           ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1, duration: 0.5 }}
+          className="text-center mt-12"
+        >
+          <Link
+            to="/signup"
+            className="inline-block bg-indigo-500 text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-indigo-600 transition-all duration-300 shadow-xl hover:shadow-2xl"
+          >
+            Get Started Now
+          </Link>
         </motion.div>
       </div>
     </div>
