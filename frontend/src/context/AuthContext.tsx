@@ -4,21 +4,21 @@ import axios from 'axios';
 interface User {
   id: string;
   email: string;
-  role: 'student' | 'tpo';
+  role: 'student' | 'tpo' | 'hr';
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (email: string, password: string, role: 'student' | 'tpo') => Promise<void>;
+  signup: (email: string, password: string, role: 'student' | 'tpo' | 'hr', hrCode?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-
+  
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -26,25 +26,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { Authorization: `Bearer ${token}` }
       }).then(response => {
         setUser(response.data);
-      }).catch(() => {
-        localStorage.removeItem('token');
+      }).catch((error) => {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          setUser(null);
+        }
       });
     }
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await axios.post('http://localhost:5000/api/login', { email, password });
-    localStorage.setItem('token', response.data.token);
-    setUser(response.data.user);
+    try {
+      const response = await axios.post('http://localhost:5000/api/login', { email, password });
+      localStorage.setItem('token', response.data.token);
+      setUser(response.data.user);
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Failed to login. Please try again.');
+    }
   };
 
-  const logout = () => {
+  const logout = () => { 
     localStorage.removeItem('token');
     setUser(null);
   };
 
-  const signup = async (email: string, password: string, role: 'student' | 'tpo') => {
-    const response = await axios.post('http://localhost:5000/api/signup', { email, password, role });
+  const signup = async (email: string, password: string, role: 'student' | 'tpo' | 'hr', hrCode?: string) => {
+    const response = await axios.post('http://localhost:5000/api/signup', { email, password, role, hr_code: hrCode });
     localStorage.setItem('token', response.data.token);
     setUser(response.data.user);
   };
@@ -64,7 +74,10 @@ export const useAuth = () => {
   return context;
 };
 
-// Add this new function to get the authentication token
 export const getAuthToken = () => {
-  return localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  return token;
 };

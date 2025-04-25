@@ -1,0 +1,6 @@
+Flask==2.3.2
+flask-pymongo==2.3.0
+flask-cors==4.0.0
+python-dotenv==1.0.0
+huggingface_hub==0.16.4
+flask-jwt-extended==4.5.2
