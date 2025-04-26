@@ -17,9 +17,9 @@ from datetime import datetime
 import tempfile
 from docx import Document
 
-# Load environment variables
 load_dotenv()
 
+# Load environment variables
 # Initialize Flask app
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
@@ -34,7 +34,7 @@ if not app.config["JWT_SECRET_KEY"]:
 if not groq_api_key:
     raise ValueError("GROQ_API_KEY must be set in environment variables")
 
-mongo = PyMongo(app)
+mongo = PyMongo(app, uri=app.config["MONGO_URI"])
 jwt = JWTManager(app)
 
 # Configure CORS
@@ -171,33 +171,35 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'docx'}
 
 # Routes
+
 @app.route("/api/signup", methods=["POST"])
 def signup():
-    data = request.json
-    email = data.get("email")
-    password = data.get("password")
-    role = data.get("role")
-    hr_code = data.get("hr_code") if role == "hr" else None
+    with app.app_context():
+        data = request.json
+        email = data.get("email")
+        password = data.get("password")
+        role = data.get("role")
+        hr_code = data.get("hr_code") if role == "hr" else None
 
-    if not email or not password or not role:
-        return jsonify({"error": "Missing required fields"}), 400
+        if not email or not password or not role:
+            return jsonify({"error": "Missing required fields"}), 400
 
-    if mongo.db.users.find_one({"email": email}):
-        return jsonify({"error": "Email already exists"}), 400
+        if mongo.db.users.find_one({"email": email}):
+            return jsonify({"error": "Email already exists"}), 400
 
-    if role == "hr" and (not hr_code or not mongo.db.companies.find_one({"hr_code": hr_code})):
-        return jsonify({"error": "Invalid HR code"}), 400
+        if role == "hr" and (not hr_code or not mongo.db.companies.find_one({"hr_code": hr_code})):
+            return jsonify({"error": "Invalid HR code"}), 400
 
-    hashed_password = generate_password_hash(password)
-    user_id = mongo.db.users.insert_one({
-        "email": email,
-        "password": hashed_password,
-        "role": role,
-        "hr_code": hr_code
-    }).inserted_id
+        hashed_password = generate_password_hash(password)
+        user_id = mongo.db.users.insert_one({
+            "email": email,
+            "password": hashed_password,
+            "role": role,
+            "hr_code": hr_code
+        }).inserted_id
 
-    token = create_access_token(identity=str(user_id))
-    return jsonify({"token": token, "user": {"id": str(user_id), "email": email, "role": role}}), 201
+        token = create_access_token(identity=str(user_id))
+        return jsonify({"token": token, "user": {"id": str(user_id), "email": email, "role": role}}), 201
 
 @app.route("/api/login", methods=["POST"])
 def login():
